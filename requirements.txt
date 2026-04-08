@@ -1,0 +1,13 @@
+# Latitude Job Setup — Python dependencies
+
+# API framework
+fastapi==0.111.*
+uvicorn[standard]==0.30.*
+pydantic==2.*
+
+# HTTP (Azure Function API + SharePoint Graph API + SiteDocs)
+requests==2.*
+
+# Utilities
+python-dotenv==1.*
+python-dateutil==2.*

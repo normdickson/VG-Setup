@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Latitude Job Setup — Velocity Geomatics</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #e8edf2;
+    --surface:   #ffffff;
+    --surface2:  #dde5ec;
+    --border:    rgba(20,38,68,0.10);
+    --border2:   rgba(20,38,68,0.22);
+    --navy:      #142644;
+    --teal:      #2e8b76;
+    --teal-bg:   #d6eeea;
+    --red:       #9b2929;
+    --red-bg:    #faeaea;
+    --amber:     #916200;
+    --amber-bg:  #fdf3d8;
+    --text:      #142644;
+    --text2:     #4a637f;
+    --text3:     #8ba0b4;
+    --radius:    10px;
+    --radius-sm: 6px;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .container { max-width: 980px; margin: 0 auto; }
+
+  /* ── Header ── */
+  .header {
+    background: var(--navy);
+    border-radius: var(--radius);
+    padding: 13px 18px;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .badge {
+    font-size: 11px;
+    background: var(--teal);
+    color: #fff;
+    padding: 2px 9px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+
+  /* ── Page title ── */
+  .page-title {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .page-sub {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 1.5rem;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text2);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  /* ── Form controls ── */
+  label {
+    font-size: 12px;
+    color: var(--text2);
+    font-weight: 500;
+    display: block;
+    margin-bottom: 4px;
+  }
+  input[type="text"], input[type="search"], select {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 14px;
+    font-family: var(--font-body);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    margin-bottom: 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type="text"]:focus,
+  input[type="search"]:focus,
+  select:focus { border-color: var(--navy); }
+
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a637f' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+    cursor: pointer;
+  }
+
+  .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .grid2 > div { display: flex; flex-direction: column; }
+  .grid2 input,
+  .grid2 select { margin-bottom: 0; }
+
+  /* ── Buttons ── */
+  .btn {
+    padding: 9px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font-body);
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: opacity 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-primary  { background: var(--navy); color: #fff; width: 100%; justify-content: center; }
+  .btn-ghost    { background: var(--surface2); color: var(--text2); }
+  .btn-danger   { background: var(--red-bg); color: var(--red); border: 0.5px solid rgba(155,41,41,.2); }
+  .btn-success  { background: var(--teal); color: #fff; width: 100%; justify-content: center; }
+  .btn:hover:not(:disabled) { opacity: 0.82; }
+
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Job list ── */
+  .job-list {
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    max-height: 360px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+  }
+  .job-item {
+    padding: 11px 13px;
+    border-bottom: 0.5px solid var(--border);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .job-item:last-child { border-bottom: none; }
+  .job-item:hover { background: var(--bg); }
+  .job-item.selected { background: #edf5f2; }
+  .job-item input[type="checkbox"] { margin-top: 3px; flex-shrink: 0; accent-color: var(--teal); }
+  .job-number  { font-weight: 600; font-size: 13px; margin-bottom: 3px; }
+  .job-meta    { font-size: 12px; color: var(--text2); line-height: 1.6; }
+  .job-meta strong { color: var(--text); }
+  .empty-state { padding: 2rem; text-align: center; color: var(--text3); font-size: 13px; }
+
+  /* ── Location override ── */
+  .loc-override {
+    margin-top: 8px;
+    padding: 10px;
+    background: var(--amber-bg);
+    border: 0.5px solid rgba(145,98,0,.2);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    color: var(--amber);
+  }
+  .loc-override label { color: var(--amber); margin-bottom: 4px; }
+  .loc-override input { margin-bottom: 0; border-color: rgba(145,98,0,.3); font-size: 13px; }
+
+  /* ── Progress / result rows ── */
+  .progress-panel { display: flex; flex-direction: column; gap: 6px; }
+
+  .job-result-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border);
+    background: var(--surface);
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+  .job-result-row.processing { border-color: var(--border2); }
+  .job-result-row.success    { border-color: rgba(46,139,118,.3); background: #f0faf8; }
+  .job-result-row.error      { border-color: rgba(155,41,41,.3); background: var(--red-bg); }
+
+  .step-icon {
+    width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 11px; margin-top: 1px;
+  }
+  .step-icon.waiting    { border: 1.5px solid var(--border2); }
+  .step-icon.processing { border: 2px solid var(--navy); border-top-color: transparent; animation: spin .8s linear infinite; }
+  .step-icon.success    { background: var(--teal-bg); color: var(--teal); }
+  .step-icon.error      { background: var(--red-bg); color: var(--red); }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .result-detail { flex: 1; min-width: 0; }
+  .result-detail-job { font-weight: 600; margin-bottom: 2px; }
+  .result-detail-msg { font-size: 12px; color: var(--text2); }
+  .result-detail-msg.err { color: var(--red); }
+
+  .result-links { display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
+  .result-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 5px 9px;
+    border-radius: var(--radius-sm);
+    transition: opacity .15s;
+  }
+  .result-link:hover { opacity: .75; }
+  .result-link.sp { background: var(--navy); color: #fff; }
+  .result-link.sd { background: var(--teal-bg); color: var(--teal); border: 0.5px solid rgba(46,139,118,.25); }
+
+  /* ── Messages ── */
+  .msg {
+    font-size: 13px;
+    padding: 10px 13px;
+    border-radius: var(--radius-sm);
+    margin-top: 10px;
+  }
+  .msg.error  { color: var(--red);   background: var(--red-bg); }
+  .msg.info   { color: var(--text2); background: var(--surface2); }
+  .msg.success{ color: var(--teal);  background: var(--teal-bg); }
+
+  .spinner-inline {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--text);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  .hidden { display: none !important; }
+
+  .count-badge {
+    display: inline-block;
+    background: var(--teal);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: 20px;
+    margin-left: 8px;
+  }
+
+  @media (max-width: 600px) {
+    .grid2 { grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:       #0c1829;
+      --surface:  #131f30;
+      --surface2: #1a2a40;
+      --border:   rgba(255,255,255,.09);
+      --border2:  rgba(255,255,255,.18);
+      --text:     #dce8f5;
+      --text2:    #7a9ab8;
+      --text3:    #4a6a88;
+      --teal-bg:  #0b2820;
+      --amber-bg: #261a00;
+      --red-bg:   #280d0d;
+    }
+    .job-item.selected { background: #0b2820; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <span class="header-title">Latitude Job Setup</span>
+    <span class="badge">Velocity Geomatics</span>
+  </div>
+
+  <div class="page-title">Job Provisioning</div>
+  <p class="page-sub">Search Latitude, select jobs, and create SharePoint folders + SiteDocs records in one step.</p>
+
+  <!-- ── Search ── -->
+  <div class="card" id="search-card">
+    <div class="card-title">Search Latitude Jobs</div>
+
+    <label>Job Number (prefix)</label>
+    <input type="search" id="inp-job" placeholder="e.g. MSL, 2601, etc." />
+
+    <div class="grid2" style="margin-bottom:12px;">
+      <div>
+        <label>Work Status</label>
+        <select id="inp-status">
+          <option value="">All statuses</option>
+        </select>
+      </div>
+      <div>
+        <label>Client Code</label>
+        <input type="search" id="inp-client" placeholder="e.g. CEV001" style="margin-bottom:0;" />
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-search" onclick="performSearch()">Search Jobs</button>
+
+    <div id="search-loading" class="msg info hidden">
+      <span class="spinner-inline"></span>Searching Latitude database…
+    </div>
+    <div id="search-error" class="msg error hidden"></div>
+  </div>
+
+  <!-- ── Results ── -->
+  <div class="card hidden" id="results-card">
+    <div class="card-title">
+      Results
+      <span class="count-badge" id="result-count">0</span>
+    </div>
+
+    <div id="job-list" class="job-list">
+      <div class="empty-state">No jobs found.</div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="selectAll()">Select all</button>
+      <button class="btn btn-ghost" onclick="deselectAll()">Deselect all</button>
+    </div>
+
+    <!-- Location override: shown when a selected job has a blank location -->
+    <div id="loc-warning" class="loc-override hidden">
+      <label>⚠ One or more selected jobs have no location. Provide a default address for SiteDocs:</label>
+      <input type="text" id="inp-loc-default" placeholder="e.g. Calgary, AB" />
+    </div>
+
+    <div style="margin-top:12px;">
+      <button class="btn btn-success" id="btn-submit" onclick="submitBatch()" disabled>
+        Provision Selected Jobs
+      </button>
+    </div>
+    <div id="submit-error" class="msg error hidden"></div>
+  </div>
+
+  <!-- ── Batch Progress ── -->
+  <div class="card hidden" id="batch-card">
+    <div class="card-title">Provisioning Progress</div>
+    <div class="progress-panel" id="progress-panel"></div>
+    <div id="batch-summary" class="msg hidden"></div>
+    <div style="margin-top:12px;">
+      <button class="btn btn-ghost hidden" id="btn-back" onclick="resetToSearch()">← New Search</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+"use strict";
+
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+let allJobs      = [];
+let selectedIdxs = new Set();
+
+// ---------------------------------------------------------------------------
+// Init: load Work Status options from API
+// ---------------------------------------------------------------------------
+(async function loadStatuses() {
+  try {
+    const res = await fetch("/statuses");
+    if (!res.ok) return;
+    const data = await res.json();
+    const sel = document.getElementById("inp-status");
+    (data.statuses || []).forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = s;
+      opt.textContent = s;
+      sel.appendChild(opt);
+    });
+  } catch (_) {
+    // Non-fatal: status drop-down stays as "All statuses"
+  }
+})();
+
+// ---------------------------------------------------------------------------
+// Search
+// ---------------------------------------------------------------------------
+async function performSearch() {
+  const jobNum  = document.getElementById("inp-job").value.trim();
+  const status  = document.getElementById("inp-status").value || undefined;
+  const client  = document.getElementById("inp-client").value.trim() || undefined;
+
+  setEl("search-error", "", true);
+  setEl("search-loading", "", false);
+  setDisabled("btn-search", true);
+
+  try {
+    const params = new URLSearchParams();
+    if (jobNum)  params.set("job_number", jobNum);
+    if (status)  params.set("status", status);
+    if (client)  params.set("client", client);
+
+    const res = await fetch(`/search?${params}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: res.statusText }));
+      throw new Error(err.detail || res.statusText);
+    }
+
+    const data = await res.json();
+    allJobs = data.jobs || [];
+    selectedIdxs.clear();
+
+    renderJobList();
+    document.getElementById("result-count").textContent = allJobs.length;
+    show("results-card");
+    hide("batch-card");
+    updateSubmitButton();
+
+  } catch (e) {
+    showMsg("search-error", "Search failed: " + e.message, "error");
+  } finally {
+    hide("search-loading");
+    setDisabled("btn-search", false);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Job list rendering
+// ---------------------------------------------------------------------------
+function renderJobList() {
+  const el = document.getElementById("job-list");
+  if (!allJobs.length) {
+    el.innerHTML = '<div class="empty-state">No jobs match your filters.</div>';
+    return;
+  }
+
+  el.innerHTML = allJobs.map((job, i) => `
+    <div class="job-item" id="ji-${i}" onclick="toggleSelection(${i})">
+      <input type="checkbox" id="cb-${i}" onchange="toggleSelection(${i})"
+             onclick="event.stopPropagation()" />
+      <div>
+        <div class="job-number">${esc(job.job_number)}</div>
+        <div class="job-meta">
+          <strong>Client:</strong> ${esc(job.client)}
+          ${job.job_name ? ` &nbsp;·&nbsp; <strong>Name:</strong> ${esc(job.job_name)}` : ""}
+          ${job.job_type ? ` &nbsp;·&nbsp; <strong>Type:</strong> ${esc(job.job_type)}` : ""}
+          <br>
+          <strong>Location:</strong>
+          ${job.location
+            ? `<span style="color:var(--text)">${esc(job.location)}</span>`
+            : `<span style="color:var(--red)">⚠ Not set</span>`}
+          &nbsp;·&nbsp;
+          <strong>Status:</strong> ${esc(job.work_status || "—")}
+          &nbsp;·&nbsp;
+          <strong>Year:</strong> ${job.year}
+        </div>
+        ${job.job_description
+          ? `<div class="job-meta" style="margin-top:2px;">${esc(job.job_description.substring(0, 100))}${job.job_description.length > 100 ? "…" : ""}</div>`
+          : ""}
+      </div>
+    </div>
+  `).join("");
+}
+
+// ---------------------------------------------------------------------------
+// Selection
+// ---------------------------------------------------------------------------
+function toggleSelection(idx) {
+  if (selectedIdxs.has(idx)) {
+    selectedIdxs.delete(idx);
+  } else {
+    selectedIdxs.add(idx);
+  }
+  const cb = document.getElementById(`cb-${idx}`);
+  const row = document.getElementById(`ji-${idx}`);
+  if (cb) cb.checked = selectedIdxs.has(idx);
+  if (row) row.classList.toggle("selected", selectedIdxs.has(idx));
+  updateSubmitButton();
+  checkLocationWarning();
+}
+
+function selectAll() {
+  allJobs.forEach((_, i) => {
+    selectedIdxs.add(i);
+    const cb = document.getElementById(`cb-${i}`);
+    const row = document.getElementById(`ji-${i}`);
+    if (cb) cb.checked = true;
+    if (row) row.classList.add("selected");
+  });
+  updateSubmitButton();
+  checkLocationWarning();
+}
+
+function deselectAll() {
+  allJobs.forEach((_, i) => {
+    const cb = document.getElementById(`cb-${i}`);
+    const row = document.getElementById(`ji-${i}`);
+    if (cb) cb.checked = false;
+    if (row) row.classList.remove("selected");
+  });
+  selectedIdxs.clear();
+  updateSubmitButton();
+  hide("loc-warning");
+}
+
+function updateSubmitButton() {
+  setDisabled("btn-submit", selectedIdxs.size === 0);
+}
+
+function checkLocationWarning() {
+  const anyBlank = Array.from(selectedIdxs).some(i => !allJobs[i].location);
+  document.getElementById("loc-warning").classList.toggle("hidden", !anyBlank);
+}
+
+// ---------------------------------------------------------------------------
+// Batch submission
+// ---------------------------------------------------------------------------
+async function submitBatch() {
+  if (selectedIdxs.size === 0) { alert("Select at least one job."); return; }
+
+  // Build job payload; use location override for blank locations
+  const locDefault = document.getElementById("inp-loc-default").value.trim();
+
+  const jobs = [];
+  for (const idx of Array.from(selectedIdxs).sort((a, b) => a - b)) {
+    const job = allJobs[idx];
+    const locName = job.location || locDefault;
+
+    if (!locName) {
+      showMsg("submit-error",
+        `Job ${job.job_number} has no location set. ` +
+        "Please enter a default address in the field above.", "error");
+      return;
+    }
+
+    jobs.push({
+      job_number:    job.job_number,
+      client_code:   job.client,
+      location_name: locName,
+    });
+  }
+
+  setEl("submit-error", "", true);
+  hide("results-card");
+  show("batch-card");
+  hide("btn-back");
+
+  // Render a pending row for every job
+  const panel = document.getElementById("progress-panel");
+  panel.innerHTML = "";
+  jobs.forEach(j => {
+    panel.insertAdjacentHTML("beforeend", makeResultRow(j.job_number, "waiting", "Queued"));
+  });
+
+  // Mark first job as processing
+  setRowState(jobs[0].job_number, "processing", "Initialising…");
+
+  setDisabled("btn-submit", true);
+
+  try {
+    const res = await fetch("/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jobs }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(data.detail || res.statusText);
+    }
+
+    // Render per-job results
+    (data.jobs_processed || []).forEach(r => {
+      if (r.status === "success") {
+        setRowState(r.job_number, "success", "Provisioned", r.sp_folder_url, r.sitedocs_url);
+      } else if (r.status === "error") {
+        setRowState(r.job_number, "error", r.error || "Unknown error");
+      }
+    });
+
+    // Show summary
+    if (data.status === "success") {
+      showMsg("batch-summary", `✓ All ${jobs.length} job(s) provisioned successfully.`, "success");
+    } else {
+      showMsg("batch-summary",
+        `Stopped at job ${data.failed_at_job || "unknown"}. ` +
+        `${(data.jobs_processed || []).filter(r => r.status === "success").length}/${jobs.length} completed.`,
+        "error");
+    }
+
+  } catch (e) {
+    // Network-level failure
+    jobs.forEach(j => setRowState(j.job_number, "error", "Request failed: " + e.message));
+    showMsg("batch-summary", "Batch request failed: " + e.message, "error");
+  }
+
+  show("btn-back");
+  setDisabled("btn-submit", false);
+}
+
+// ---------------------------------------------------------------------------
+// Row rendering helpers
+// ---------------------------------------------------------------------------
+function makeResultRow(jobNumber, iconClass, msg, spUrl, sdUrl) {
+  return `
+    <div class="job-result-row ${iconClass === "success" ? "success" : iconClass === "error" ? "error" : "processing"}"
+         id="row-${CSS.escape(jobNumber)}">
+      <div class="step-icon ${iconClass}">
+        ${iconClass === "success" ? "✓" : iconClass === "error" ? "✕" : ""}
+      </div>
+      <div class="result-detail">
+        <div class="result-detail-job">${esc(jobNumber)}</div>
+        <div class="result-detail-msg ${iconClass === "error" ? "err" : ""}">${esc(msg)}</div>
+        ${spUrl || sdUrl ? `
+          <div class="result-links">
+            ${spUrl ? `<a href="${esc(spUrl)}" target="_blank" class="result-link sp">📁 SharePoint Folder</a>` : ""}
+            ${sdUrl ? `<a href="${esc(sdUrl)}" target="_blank" class="result-link sd">📍 SiteDocs Record</a>` : ""}
+          </div>` : ""}
+      </div>
+    </div>`;
+}
+
+function setRowState(jobNumber, iconClass, msg, spUrl, sdUrl) {
+  const rowId = "row-" + jobNumber.replace(/[^a-zA-Z0-9-_]/g, "_");
+  const existing = document.getElementById(rowId) ||
+    document.querySelector(`[id^="row-"]`);
+
+  // Try to find by job number text content
+  const allRows = document.querySelectorAll(".job-result-row");
+  let target = null;
+  allRows.forEach(r => {
+    if (r.querySelector(".result-detail-job")?.textContent === jobNumber) {
+      target = r;
+    }
+  });
+
+  if (target) {
+    target.outerHTML = makeResultRow(jobNumber, iconClass, msg, spUrl, sdUrl);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Navigation helpers
+// ---------------------------------------------------------------------------
+function resetToSearch() {
+  hide("batch-card");
+  show("results-card");
+  hide("btn-back");
+}
+
+// ---------------------------------------------------------------------------
+// Utility
+// ---------------------------------------------------------------------------
+function esc(s) {
+  if (s == null) return "";
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function show(id)  { document.getElementById(id)?.classList.remove("hidden"); }
+function hide(id)  { document.getElementById(id)?.classList.add("hidden"); }
+
+function setEl(id, text, hidden) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.classList.toggle("hidden", !!hidden);
+}
+
+function showMsg(id, text, type) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = `msg ${type}`;
+  el.classList.remove("hidden");
+}
+
+function setDisabled(id, disabled) {
+  const el = document.getElementById(id);
+  if (el) el.disabled = disabled;
+}
+
+// Trigger search on Enter in job/client inputs
+["inp-job", "inp-client"].forEach(id => {
+  document.getElementById(id)?.addEventListener("keydown", e => {
+    if (e.key === "Enter") performSearch();
+  });
+});
+</script>
+</body>
+</html>
