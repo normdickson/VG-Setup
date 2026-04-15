@@ -58,6 +58,11 @@
     letter-spacing: 0.06em;
     text-transform: uppercase;
   }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
   .badge {
     font-size: 11px;
     background: var(--teal);
@@ -66,6 +71,24 @@
     border-radius: 20px;
     font-weight: 500;
   }
+  .theme-toggle {
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.9);
+    border: 0.5px solid rgba(255,255,255,0.18);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    transition: background 0.15s, transform 0.15s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.22); }
+  .theme-toggle:active { transform: scale(0.92); }
 
   /* ── Page title ── */
   .page-title {
@@ -296,8 +319,24 @@
     .grid2 { grid-template-columns: 1fr; }
   }
 
+  /* Dark theme: applied via system preference OR explicit data-theme="dark" */
+  :root[data-theme="dark"] {
+    --bg:       #0c1829;
+    --surface:  #131f30;
+    --surface2: #1a2a40;
+    --border:   rgba(255,255,255,.09);
+    --border2:  rgba(255,255,255,.18);
+    --text:     #dce8f5;
+    --text2:    #7a9ab8;
+    --text3:    #4a6a88;
+    --teal-bg:  #0b2820;
+    --amber-bg: #261a00;
+    --red-bg:   #280d0d;
+  }
+  :root[data-theme="dark"] .job-item.selected { background: #0b2820; }
+
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       --bg:       #0c1829;
       --surface:  #131f30;
       --surface2: #1a2a40;
@@ -310,7 +349,7 @@
       --amber-bg: #261a00;
       --red-bg:   #280d0d;
     }
-    .job-item.selected { background: #0b2820; }
+    :root:not([data-theme="light"]) .job-item.selected { background: #0b2820; }
   }
 </style>
 </head>
@@ -318,8 +357,13 @@
 <div class="container">
 
   <div class="header">
-    <span class="header-title">Latitude Job Setup</span>
-    <span class="badge">Velocity Geomatics</span>
+    <span class="header-title">Job Provisioning</span>
+    <div class="header-right">
+      <span class="badge">Velocity Geomatics</span>
+      <button type="button" class="theme-toggle" id="theme-toggle"
+              onclick="toggleTheme()" aria-label="Toggle dark/light theme"
+              title="Toggle dark/light theme">🌙</button>
+    </div>
   </div>
 
   <div class="page-title">Job Provisioning</div>
@@ -397,6 +441,37 @@
 
 <script>
 "use strict";
+
+// ---------------------------------------------------------------------------
+// Theme (dark/light) — persists via localStorage; defaults to system preference
+// ---------------------------------------------------------------------------
+(function initTheme() {
+  const saved = localStorage.getItem("theme");
+  if (saved === "dark" || saved === "light") {
+    document.documentElement.setAttribute("data-theme", saved);
+  }
+  // Update icon once DOM is ready
+  document.addEventListener("DOMContentLoaded", updateThemeIcon);
+})();
+
+function currentTheme() {
+  const attr = document.documentElement.getAttribute("data-theme");
+  if (attr === "dark" || attr === "light") return attr;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function toggleTheme() {
+  const next = currentTheme() === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  localStorage.setItem("theme", next);
+  updateThemeIcon();
+}
+
+function updateThemeIcon() {
+  const btn = document.getElementById("theme-toggle");
+  if (!btn) return;
+  btn.textContent = currentTheme() === "dark" ? "☀" : "🌙";
+}
 
 // ---------------------------------------------------------------------------
 // State
