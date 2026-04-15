@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Latitude Job Setup — Velocity Geomatics</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -27,8 +27,8 @@
     --text3:     #8ba0b4;
     --radius:    10px;
     --radius-sm: 6px;
-    --font-body: 'DM Sans', sans-serif;
-    --font-mono: 'DM Mono', monospace;
+    --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: monospace;
   }
 
   body {
@@ -36,12 +36,19 @@
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
-    padding: 2rem 1rem 4rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
   }
 
-  .container { max-width: 980px; margin: 0 auto; }
+  .container {
+    width: 580px;
+    max-width: 100vw;
+    padding: 1rem;
+  }
 
-  /* ── Header ── */
   .header {
     background: var(--navy);
     border-radius: var(--radius);
@@ -51,161 +58,87 @@
     align-items: center;
     justify-content: space-between;
   }
-  .header-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: rgba(255,255,255,0.9);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .badge {
-    font-size: 11px;
-    background: var(--teal);
-    color: #fff;
-    padding: 2px 9px;
-    border-radius: 20px;
-    font-weight: 500;
-  }
+  .header-title { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.9); letter-spacing: 0.06em; text-transform: uppercase; }
+  .badge { font-size: 11px; background: var(--teal); color: #fff; padding: 2px 9px; border-radius: 20px; font-weight: 500; }
+
+  /* ── Theme toggle ── */
+  .header-right { display: flex; align-items: center; gap: 10px; }
   .theme-toggle {
     background: rgba(255,255,255,0.12);
     color: rgba(255,255,255,0.9);
     border: 0.5px solid rgba(255,255,255,0.18);
-    width: 30px;
-    height: 30px;
+    width: 30px; height: 30px;
     border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 14px;
-    line-height: 1;
-    padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 14px; line-height: 1; padding: 0;
     transition: background 0.15s, transform 0.15s;
   }
   .theme-toggle:hover { background: rgba(255,255,255,0.22); }
   .theme-toggle:active { transform: scale(0.92); }
 
-  /* ── Page title ── */
-  .page-title {
-    font-size: 22px;
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-  .page-sub {
-    font-size: 13px;
-    color: var(--text2);
-    margin-bottom: 1.5rem;
-  }
+  .page-title { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: var(--text2); margin-bottom: 1.5rem; }
 
-  /* ── Cards ── */
-  .card {
-    background: var(--surface);
-    border: 0.5px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.25rem;
-    margin-bottom: 1rem;
-  }
-  .card-title {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text2);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-bottom: 1rem;
-  }
+  .card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; width: 100%; }
+  .card-title { font-size: 11px; font-weight: 600; color: var(--text2); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1rem; }
 
-  /* ── Form controls ── */
-  label {
-    font-size: 12px;
-    color: var(--text2);
-    font-weight: 500;
-    display: block;
-    margin-bottom: 4px;
-  }
+  label { font-size: 12px; color: var(--text2); font-weight: 500; display: block; margin-bottom: 4px; }
   input[type="text"], input[type="search"], select {
-    width: 100%;
-    padding: 8px 10px;
-    font-size: 14px;
-    font-family: var(--font-body);
-    border: 0.5px solid var(--border2);
-    border-radius: var(--radius-sm);
-    background: var(--surface);
-    color: var(--text);
-    margin-bottom: 12px;
-    outline: none;
-    transition: border-color 0.15s;
+    width: 100%; padding: 8px 10px; font-size: 14px; font-family: var(--font-body);
+    border: 0.5px solid var(--border2); border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--text); margin-bottom: 12px;
+    outline: none; transition: border-color 0.15s;
   }
-  input[type="text"]:focus,
-  input[type="search"]:focus,
-  select:focus { border-color: var(--navy); }
-
+  input[type="text"]:focus, input[type="search"]:focus, select:focus { border-color: var(--navy); }
   select {
     appearance: none;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a637f' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    padding-right: 28px;
-    cursor: pointer;
+    background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; cursor: pointer;
   }
 
-  .grid2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .grid2 > div { display: flex; flex-direction: column; }
-  .grid2 input,
-  .grid2 select { margin-bottom: 0; }
+  .grid2 input, .grid2 select { margin-bottom: 0; }
 
-  /* ── Buttons ── */
   .btn {
-    padding: 9px 14px;
-    font-size: 13px;
-    font-weight: 600;
-    font-family: var(--font-body);
-    border: none;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: opacity 0.15s;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+    padding: 9px 14px; font-size: 13px; font-weight: 600; font-family: var(--font-body);
+    border: none; border-radius: var(--radius-sm); cursor: pointer;
+    transition: opacity 0.15s; display: inline-flex; align-items: center; gap: 6px;
   }
   .btn:disabled { opacity: 0.35; cursor: not-allowed; }
   .btn-primary  { background: var(--navy); color: #fff; width: 100%; justify-content: center; }
   .btn-ghost    { background: var(--surface2); color: var(--text2); }
-  .btn-danger   { background: var(--red-bg); color: var(--red); border: 0.5px solid rgba(155,41,41,.2); }
   .btn-success  { background: var(--teal); color: #fff; width: 100%; justify-content: center; }
   .btn:hover:not(:disabled) { opacity: 0.82; }
 
-  .btn-row {
-    display: flex;
-    gap: 8px;
-    margin-top: 10px;
-    flex-wrap: wrap;
+  /* ── Tabs ── */
+  .tab-bar { display: flex; gap: 6px; margin-bottom: 1rem; }
+  .tab-btn {
+    flex: 1; padding: 8px; font-size: 13px; font-weight: 500; font-family: var(--font-body);
+    border-radius: var(--radius-sm); border: 0.5px solid var(--border2);
+    background: transparent; color: var(--text2); cursor: pointer; transition: all 0.15s;
   }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
 
-  /* ── Job list ── */
+  /* ── Filter pills ── */
+  .filter-bar { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .filter-pill {
+    padding: 4px 12px; font-size: 12px; font-weight: 600; border-radius: 20px;
+    border: 0.5px solid var(--border2); background: var(--surface2); color: var(--text2);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .filter-pill.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+  /* ── Job list — fixed height with pinned footer ── */
+  .results-body { display: flex; flex-direction: column; }
   .job-list {
-    border: 0.5px solid var(--border);
-    border-radius: var(--radius-sm);
-    max-height: 360px;
-    overflow-y: auto;
-    margin-bottom: 10px;
+    border: 0.5px solid var(--border); border-radius: var(--radius-sm);
+    height: 380px; overflow-y: auto; margin-bottom: 0; flex-shrink: 0;
   }
   .job-item {
-    padding: 11px 13px;
-    border-bottom: 0.5px solid var(--border);
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    cursor: pointer;
-    transition: background 0.1s;
+    padding: 11px 13px; border-bottom: 0.5px solid var(--border);
+    display: flex; gap: 10px; align-items: flex-start; cursor: pointer; transition: background 0.1s;
   }
   .job-item:last-child { border-bottom: none; }
   .job-item:hover { background: var(--bg); }
@@ -216,138 +149,87 @@
   .job-meta strong { color: var(--text); }
   .empty-state { padding: 2rem; text-align: center; color: var(--text3); font-size: 13px; }
 
-  /* ── Location override ── */
-  .loc-override {
-    margin-top: 8px;
-    padding: 10px;
-    background: var(--amber-bg);
-    border: 0.5px solid rgba(145,98,0,.2);
-    border-radius: var(--radius-sm);
-    font-size: 12px;
-    color: var(--amber);
+  /* ── Pinned footer ── */
+  .results-footer {
+    border-top: 0.5px solid var(--border); padding-top: 12px; margin-top: 12px;
+    background: var(--surface); flex-shrink: 0;
   }
+
+  /* ── Location override ── */
+  .loc-override { margin-top: 8px; padding: 10px; background: var(--amber-bg); border: 0.5px solid rgba(145,98,0,.2); border-radius: var(--radius-sm); font-size: 12px; color: var(--amber); }
   .loc-override label { color: var(--amber); margin-bottom: 4px; }
   .loc-override input { margin-bottom: 0; border-color: rgba(145,98,0,.3); font-size: 13px; }
 
-  /* ── Progress / result rows ── */
-  .progress-panel { display: flex; flex-direction: column; gap: 6px; }
-
-  .job-result-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: var(--radius-sm);
-    border: 0.5px solid var(--border);
-    background: var(--surface);
-    font-size: 13px;
-    transition: all 0.2s;
+  /* ── Provision dialog ── */
+  .provision-dialog {
+    background: var(--surface2); border: 0.5px solid var(--border2);
+    border-radius: var(--radius-sm); padding: 12px 14px; margin-top: 10px;
   }
+  .provision-dialog-title { font-size: 11px; font-weight: 600; color: var(--text2); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 10px; }
+  .provision-preview { font-size: 12px; color: var(--text2); margin-bottom: 10px; line-height: 1.8; }
+  .provision-preview strong { color: var(--text); }
+  .check-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; font-weight: 500; }
+  .check-row input[type="checkbox"] { width: 15px; height: 15px; margin: 0; accent-color: var(--teal); flex-shrink: 0; }
+
+  /* ── Progress rows ── */
+  .progress-panel { display: flex; flex-direction: column; gap: 6px; }
+  .job-result-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); border: 0.5px solid var(--border); background: var(--surface); font-size: 13px; transition: all 0.2s; }
   .job-result-row.processing { border-color: var(--border2); }
   .job-result-row.success    { border-color: rgba(46,139,118,.3); background: #f0faf8; }
   .job-result-row.error      { border-color: rgba(155,41,41,.3); background: var(--red-bg); }
-
-  .step-icon {
-    width: 20px; height: 20px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; font-size: 11px; margin-top: 1px;
-  }
+  .step-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; margin-top: 1px; }
   .step-icon.waiting    { border: 1.5px solid var(--border2); }
   .step-icon.processing { border: 2px solid var(--navy); border-top-color: transparent; animation: spin .8s linear infinite; }
   .step-icon.success    { background: var(--teal-bg); color: var(--teal); }
   .step-icon.error      { background: var(--red-bg); color: var(--red); }
-
   @keyframes spin { to { transform: rotate(360deg); } }
-
   .result-detail { flex: 1; min-width: 0; }
   .result-detail-job { font-weight: 600; margin-bottom: 2px; }
   .result-detail-msg { font-size: 12px; color: var(--text2); }
   .result-detail-msg.err { color: var(--red); }
-
   .result-links { display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
-  .result-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 12px;
-    font-weight: 600;
-    text-decoration: none;
-    padding: 5px 9px;
-    border-radius: var(--radius-sm);
-    transition: opacity .15s;
-  }
+  .result-link { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; text-decoration: none; padding: 5px 9px; border-radius: var(--radius-sm); transition: opacity .15s; }
   .result-link:hover { opacity: .75; }
   .result-link.sp { background: var(--navy); color: #fff; }
   .result-link.sd { background: var(--teal-bg); color: var(--teal); border: 0.5px solid rgba(46,139,118,.25); }
 
   /* ── Messages ── */
-  .msg {
-    font-size: 13px;
-    padding: 10px 13px;
-    border-radius: var(--radius-sm);
-    margin-top: 10px;
-  }
-  .msg.error  { color: var(--red);   background: var(--red-bg); }
-  .msg.info   { color: var(--text2); background: var(--surface2); }
-  .msg.success{ color: var(--teal);  background: var(--teal-bg); }
-
-  .spinner-inline {
-    display: inline-block;
-    width: 14px; height: 14px;
-    border: 2px solid var(--border2);
-    border-top-color: var(--text);
-    border-radius: 50%;
-    animation: spin .7s linear infinite;
-    vertical-align: middle;
-    margin-right: 6px;
-  }
-
+  .msg { font-size: 13px; padding: 10px 13px; border-radius: var(--radius-sm); margin-top: 10px; }
+  .msg.error   { color: var(--red);   background: var(--red-bg); }
+  .msg.info    { color: var(--text2); background: var(--surface2); }
+  .msg.success { color: var(--teal);  background: var(--teal-bg); }
+  .spinner-inline { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border2); border-top-color: var(--text); border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 6px; }
   .hidden { display: none !important; }
+  .count-badge { display: inline-block; background: var(--teal); color: #fff; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 20px; margin-left: 8px; }
 
-  .count-badge {
-    display: inline-block;
-    background: var(--teal);
-    color: #fff;
-    font-size: 11px;
-    font-weight: 600;
-    padding: 1px 7px;
-    border-radius: 20px;
-    margin-left: 8px;
-  }
+  /* ── Locations list — narrow ── */
+  .loc-list { border: 0.5px solid var(--border); border-radius: var(--radius-sm); max-height: 420px; overflow-y: auto; }
+  .loc-item { padding: 7px 11px; border-bottom: 0.5px solid var(--border); transition: background 0.1s; }
+  .loc-item:last-child { border-bottom: none; }
+  .loc-item:hover { background: var(--bg); }
+  .loc-name { font-weight: 600; font-size: 12px; margin-bottom: 1px; }
+  .loc-meta { font-size: 11px; color: var(--text2); line-height: 1.5; }
+  .loc-archived { opacity: 0.45; }
+  .loc-badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; margin-left: 6px; background: var(--red-bg); color: var(--red); }
+  .loc-badge.active { background: var(--teal-bg); color: var(--teal); }
 
-  @media (max-width: 600px) {
-    .grid2 { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 600px) { .grid2 { grid-template-columns: 1fr; } }
 
-  /* Dark theme: applied via system preference OR explicit data-theme="dark" */
+  /* Dark theme: applied via explicit data-theme="dark" OR system preference */
   :root[data-theme="dark"] {
-    --bg:       #0c1829;
-    --surface:  #131f30;
-    --surface2: #1a2a40;
-    --border:   rgba(255,255,255,.09);
-    --border2:  rgba(255,255,255,.18);
-    --text:     #dce8f5;
-    --text2:    #7a9ab8;
-    --text3:    #4a6a88;
-    --teal-bg:  #0b2820;
-    --amber-bg: #261a00;
-    --red-bg:   #280d0d;
+    --bg: #0c1829; --surface: #131f30; --surface2: #1a2a40;
+    --border: rgba(255,255,255,.09); --border2: rgba(255,255,255,.18);
+    --text: #dce8f5; --text2: #7a9ab8; --text3: #4a6a88;
+    --teal-bg: #0b2820; --amber-bg: #261a00; --red-bg: #280d0d;
   }
   :root[data-theme="dark"] .job-item.selected { background: #0b2820; }
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg:       #0c1829;
-      --surface:  #131f30;
-      --surface2: #1a2a40;
-      --border:   rgba(255,255,255,.09);
-      --border2:  rgba(255,255,255,.18);
-      --text:     #dce8f5;
-      --text2:    #7a9ab8;
-      --text3:    #4a6a88;
-      --teal-bg:  #0b2820;
-      --amber-bg: #261a00;
-      --red-bg:   #280d0d;
+      --bg: #0c1829; --surface: #131f30; --surface2: #1a2a40;
+      --border: rgba(255,255,255,.09); --border2: rgba(255,255,255,.18);
+      --text: #dce8f5; --text2: #7a9ab8; --text3: #4a6a88;
+      --teal-bg: #0b2820; --amber-bg: #261a00; --red-bg: #280d0d;
     }
     :root:not([data-theme="light"]) .job-item.selected { background: #0b2820; }
   }
@@ -356,84 +238,136 @@
 <body>
 <div class="container">
 
-  <div class="header">
-    <span class="header-title">Job Provisioning</span>
-    <div class="header-right">
-      <span class="badge">Velocity Geomatics</span>
+  <div style="background:#142644;border-radius:10px;padding:14px 18px;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;">
+    <img src="data:image/png;base64,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" alt="Velocity Geomatics" style="height:32px;display:block;" />
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:12px;background:#2e8b76;color:#fff;padding:2px 10px;border-radius:20px;font-weight:500;">VG-Setup</span>
       <button type="button" class="theme-toggle" id="theme-toggle"
               onclick="toggleTheme()" aria-label="Toggle dark/light theme"
               title="Toggle dark/light theme">🌙</button>
     </div>
   </div>
 
-  <div class="page-title">Job Provisioning</div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+    <span style="font-size:20px;font-weight:600;color:var(--text);">Job Provisioning</span>
+    <span style="font-size:11px;background:var(--surface2);color:var(--text2);padding:2px 8px;border-radius:20px;font-weight:500;">live</span>
+  </div>
   <p class="page-sub">Search Latitude, select jobs, and create SharePoint folders + SiteDocs records in one step.</p>
 
-  <!-- ── Search ── -->
-  <div class="card" id="search-card">
-    <div class="card-title">Search Latitude Jobs</div>
-
-    <label>Job Number (prefix)</label>
-    <input type="search" id="inp-job" placeholder="e.g. MSL, 2601, etc." />
-
-    <div class="grid2" style="margin-bottom:12px;">
-      <div>
-        <label>Work Status</label>
-        <select id="inp-status">
-          <option value="">All statuses</option>
-        </select>
-      </div>
-      <div>
-        <label>Client Code</label>
-        <input type="search" id="inp-client" placeholder="e.g. CEV001" style="margin-bottom:0;" />
-      </div>
-    </div>
-
-    <button class="btn btn-primary" id="btn-search" onclick="performSearch()">Search Jobs</button>
-
-    <div id="search-loading" class="msg info hidden">
-      <span class="spinner-inline"></span>Searching Latitude database…
-    </div>
-    <div id="search-error" class="msg error hidden"></div>
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-jobs-btn" onclick="switchTab('jobs')">Job Provisioning</button>
+    <button class="tab-btn" id="tab-locations-btn" onclick="switchTab('locations')">SiteDocs Locations</button>
   </div>
 
-  <!-- ── Results ── -->
-  <div class="card hidden" id="results-card">
-    <div class="card-title">
-      Results
-      <span class="count-badge" id="result-count">0</span>
+  <!-- ── JOB PROVISIONING TAB ── -->
+  <div id="tab-jobs">
+
+    <div class="card" id="search-card">
+      <div class="card-title">Search Latitude Jobs</div>
+      <label>Job Number (prefix)</label>
+      <input type="search" id="inp-job" placeholder="e.g. 260, 2601, etc." />
+      <div class="grid2" style="margin-bottom:12px;">
+        <div>
+          <label>Work Status</label>
+          <select id="inp-status"><option value="">All statuses</option></select>
+        </div>
+        <div>
+          <label>Client Code</label>
+          <input type="search" id="inp-client" placeholder="e.g. 2022G0003" style="margin-bottom:0;" />
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btn-search" onclick="performSearch()">Search</button>
+      <div id="search-loading" class="msg info hidden"><span class="spinner-inline"></span>Searching Latitude database…</div>
+      <div id="search-error" class="msg error hidden"></div>
     </div>
 
-    <div id="job-list" class="job-list">
-      <div class="empty-state">No jobs found.</div>
+    <div class="card hidden" id="results-card" style="display:flex;flex-direction:column;max-height:80vh;">
+      <div class="card-title">
+        Results
+        <span class="count-badge" id="result-count">0</span>
+      </div>
+
+      <div class="filter-bar">
+        <button class="filter-pill active" id="pill-unprovisioned" onclick="setProvisionFilter('unprovisioned')">Unprovisioned</button>
+        <button class="filter-pill" id="pill-provisioned" onclick="setProvisionFilter('provisioned')">Provisioned</button>
+        <button class="filter-pill" id="pill-all" onclick="setProvisionFilter('all')">All</button>
+      </div>
+
+      <div class="results-body" style="flex:1;display:flex;flex-direction:column;min-height:0;">
+        <div id="job-list" class="job-list" style="flex:1;overflow-y:auto;min-height:0;">
+          <div class="empty-state">No jobs found.</div>
+        </div>
+
+        <div class="results-footer" style="flex-shrink:0;padding-top:12px;border-top:0.5px solid var(--border);margin-top:10px;">
+          <div id="loc-warning" class="loc-override hidden" style="margin-top:0;margin-bottom:10px;">
+            <label>⚠ One or more selected jobs have no location set for SiteDocs:</label>
+            <input type="text" id="inp-loc-default" placeholder="e.g. Calgary, AB" />
+          </div>
+
+          <!-- Provision dialog -->
+          <div id="provision-dialog" class="provision-dialog hidden">
+            <div class="provision-dialog-title">Provision Options</div>
+            <div class="provision-preview" id="provision-preview"></div>
+            <div class="check-row">
+              <input type="checkbox" id="chk-sharepoint" checked />
+              <label for="chk-sharepoint" style="margin:0;cursor:pointer;">Create SharePoint folder</label>
+            </div>
+            <div class="check-row">
+              <input type="checkbox" id="chk-sitedocs" checked />
+              <label for="chk-sitedocs" style="margin:0;cursor:pointer;">Create SiteDocs location</label>
+            </div>
+            <div style="margin-top:10px;display:flex;gap:8px;">
+              <button class="btn btn-success" style="flex:1;" id="btn-confirm" onclick="confirmProvision()">Provision</button>
+              <button class="btn btn-ghost" onclick="hide('provision-dialog')">Cancel</button>
+            </div>
+          </div>
+
+          <button class="btn btn-success" id="btn-submit" onclick="showProvisionDialog()" disabled style="display:block;">
+            Provision Selected Jobs
+          </button>
+          <div id="submit-error" class="msg error hidden"></div>
+        </div>
+      </div>
     </div>
 
-    <div class="btn-row">
-      <button class="btn btn-ghost" onclick="selectAll()">Select all</button>
-      <button class="btn btn-ghost" onclick="deselectAll()">Deselect all</button>
+    <div class="card hidden" id="batch-card">
+      <div class="card-title">Provisioning Progress</div>
+      <div class="progress-panel" id="progress-panel"></div>
+      <div id="batch-summary" class="msg hidden"></div>
+      <div style="margin-top:12px;">
+        <button class="btn btn-ghost hidden" id="btn-back" onclick="resetToSearch()">← New Search</button>
+      </div>
     </div>
 
-    <!-- Location override: shown when a selected job has a blank location -->
-    <div id="loc-warning" class="loc-override hidden">
-      <label>⚠ One or more selected jobs have no location. Provide a default address for SiteDocs:</label>
-      <input type="text" id="inp-loc-default" placeholder="e.g. Calgary, AB" />
-    </div>
+  </div><!-- end tab-jobs -->
 
-    <div style="margin-top:12px;">
-      <button class="btn btn-success" id="btn-submit" onclick="submitBatch()" disabled>
-        Provision Selected Jobs
-      </button>
-    </div>
-    <div id="submit-error" class="msg error hidden"></div>
-  </div>
-
-  <!-- ── Batch Progress ── -->
-  <div class="card hidden" id="batch-card">
-    <div class="card-title">Provisioning Progress</div>
-    <div class="progress-panel" id="progress-panel"></div>
-    <div id="batch-summary" class="msg hidden"></div>
-    <div style="margin-top:12px;">
-      <button class="btn btn-ghost hidden" id="btn-back" onclick="resetToSearch()">← New Search</button>
+  <!-- ── SITEDOCS LOCATIONS TAB ── -->
+  <div id="tab-locations" class="hidden">
+    <div class="card">
+      <div class="card-title">
+        SiteDocs Locations
+        <span class="count-badge" id="loc-count" style="display:none">0</span>
+      </div>
+      <div class="grid2" style="margin-bottom:12px;">
+        <div>
+          <label>Search by name</label>
+          <input type="search" id="inp-loc-search" placeholder="e.g. Vermilion, 260155" style="margin-bottom:0;" oninput="filterLocations()" />
+        </div>
+        <div>
+          <label>Show archived</label>
+          <select id="inp-loc-archived" onchange="filterLocations()" style="margin-bottom:0;">
+            <option value="active">Active only</option>
+            <option value="all">All locations</option>
+            <option value="archived">Archived only</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="btn-load-locs" onclick="loadLocations()">Search</button>
+      <div id="loc-loading" class="msg info hidden"><span class="spinner-inline"></span>Loading SiteDocs locations…</div>
+      <div id="loc-error" class="msg error hidden"></div>
+      <div id="loc-list" class="loc-list" style="margin-top:10px;">
+        <div class="empty-state">Click Search to load locations.</div>
+      </div>
     </div>
   </div>
 
@@ -450,7 +384,6 @@
   if (saved === "dark" || saved === "light") {
     document.documentElement.setAttribute("data-theme", saved);
   }
-  // Update icon once DOM is ready
   document.addEventListener("DOMContentLoaded", updateThemeIcon);
 })();
 
@@ -473,14 +406,14 @@ function updateThemeIcon() {
   btn.textContent = currentTheme() === "dark" ? "☀" : "🌙";
 }
 
-// ---------------------------------------------------------------------------
-// State
-// ---------------------------------------------------------------------------
-let allJobs      = [];
-let selectedIdxs = new Set();
+let allJobs         = [];
+let filteredJobs    = [];
+let selectedIdxs    = new Set();
+let provisionFilter = "unprovisioned";
+let allLocations    = [];
 
 // ---------------------------------------------------------------------------
-// Init: load Work Status options from API
+// Init
 // ---------------------------------------------------------------------------
 (async function loadStatuses() {
   try {
@@ -490,22 +423,29 @@ let selectedIdxs = new Set();
     const sel = document.getElementById("inp-status");
     (data.statuses || []).forEach(s => {
       const opt = document.createElement("option");
-      opt.value = s;
-      opt.textContent = s;
+      opt.value = s; opt.textContent = s;
       sel.appendChild(opt);
     });
-  } catch (_) {
-    // Non-fatal: status drop-down stays as "All statuses"
-  }
+  } catch (_) {}
 })();
+
+// ---------------------------------------------------------------------------
+// Tab switching
+// ---------------------------------------------------------------------------
+function switchTab(tab) {
+  document.getElementById("tab-jobs").classList.toggle("hidden", tab !== "jobs");
+  document.getElementById("tab-locations").classList.toggle("hidden", tab !== "locations");
+  document.getElementById("tab-jobs-btn").classList.toggle("active", tab === "jobs");
+  document.getElementById("tab-locations-btn").classList.toggle("active", tab === "locations");
+}
 
 // ---------------------------------------------------------------------------
 // Search
 // ---------------------------------------------------------------------------
 async function performSearch() {
-  const jobNum  = document.getElementById("inp-job").value.trim();
-  const status  = document.getElementById("inp-status").value || undefined;
-  const client  = document.getElementById("inp-client").value.trim() || undefined;
+  const jobNum = document.getElementById("inp-job").value.trim();
+  const status = document.getElementById("inp-status").value || undefined;
+  const client = document.getElementById("inp-client").value.trim() || undefined;
 
   setEl("search-error", "", true);
   setEl("search-loading", "", false);
@@ -513,9 +453,9 @@ async function performSearch() {
 
   try {
     const params = new URLSearchParams();
-    if (jobNum)  params.set("job_number", jobNum);
-    if (status)  params.set("status", status);
-    if (client)  params.set("client", client);
+    if (jobNum) params.set("job_number", jobNum);
+    if (status) params.set("status", status);
+    if (client) params.set("client", client);
 
     const res = await fetch(`/search?${params}`);
     if (!res.ok) {
@@ -526,13 +466,11 @@ async function performSearch() {
     const data = await res.json();
     allJobs = data.jobs || [];
     selectedIdxs.clear();
-
-    renderJobList();
-    document.getElementById("result-count").textContent = allJobs.length;
+    applyProvisionFilter();
     show("results-card");
     hide("batch-card");
+    hide("provision-dialog");
     updateSubmitButton();
-
   } catch (e) {
     showMsg("search-error", "Search failed: " + e.message, "error");
   } finally {
@@ -542,172 +480,169 @@ async function performSearch() {
 }
 
 // ---------------------------------------------------------------------------
-// Job list rendering
+// Provision filter
+// ---------------------------------------------------------------------------
+function setProvisionFilter(f) {
+  provisionFilter = f;
+  ["unprovisioned", "provisioned", "all"].forEach(x => {
+    document.getElementById("pill-" + x).classList.toggle("active", x === f);
+  });
+  selectedIdxs.clear();
+  applyProvisionFilter();
+  updateSubmitButton();
+}
+
+function applyProvisionFilter() {
+  filteredJobs = allJobs.filter(job => {
+    const hasDate = !!job.provisioned_date;
+    if (provisionFilter === "unprovisioned") return !hasDate;
+    if (provisionFilter === "provisioned")   return hasDate;
+    return true;
+  });
+  renderJobList();
+  document.getElementById("result-count").textContent = filteredJobs.length;
+}
+
+// ---------------------------------------------------------------------------
+// Render job list
 // ---------------------------------------------------------------------------
 function renderJobList() {
   const el = document.getElementById("job-list");
-  if (!allJobs.length) {
+  if (!filteredJobs.length) {
     el.innerHTML = '<div class="empty-state">No jobs match your filters.</div>';
     return;
   }
-
-  el.innerHTML = allJobs.map((job, i) => `
-    <div class="job-item" id="ji-${i}" onclick="toggleSelection(${i})">
-      <input type="checkbox" id="cb-${i}" onchange="toggleSelection(${i})"
-             onclick="event.stopPropagation()" />
-      <div>
-        <div class="job-number">${esc(job.job_number)}</div>
-        <div class="job-meta">
-          <strong>Client:</strong> ${esc(job.client)}
-          ${job.job_name ? ` &nbsp;·&nbsp; <strong>Name:</strong> ${esc(job.job_name)}` : ""}
-          ${job.job_type ? ` &nbsp;·&nbsp; <strong>Type:</strong> ${esc(job.job_type)}` : ""}
-          <br>
-          <strong>Location:</strong>
-          ${job.location
-            ? `<span style="color:var(--text)">${esc(job.location)}</span>`
-            : `<span style="color:var(--red)">⚠ Not set</span>`}
-          &nbsp;·&nbsp;
-          <strong>Status:</strong> ${esc(job.work_status || "—")}
-          &nbsp;·&nbsp;
-          <strong>Year:</strong> ${job.year}
+  el.innerHTML = filteredJobs.map((job, i) => {
+    const provDate = job.provisioned_date
+      ? new Date(job.provisioned_date).getFullYear() === 1900
+        ? '<div class="job-meta" style="margin-top:2px;color:var(--teal);">✓ Legacy provisioned</div>'
+        : `<div class="job-meta" style="margin-top:2px;color:var(--teal);">✓ Provisioned: ${new Date(job.provisioned_date).toLocaleDateString()}</div>`
+      : '';
+    return `
+      <div class="job-item" id="ji-${i}" onclick="toggleSelection(${i})">
+        <input type="checkbox" id="cb-${i}" onchange="toggleSelection(${i})" onclick="event.stopPropagation()" />
+        <div>
+          <div class="job-number">${esc(job.job_number)}</div>
+          <div class="job-meta">
+            <strong>Client:</strong> ${esc(job.company_name || job.client)}
+            ${job.job_name ? ` &nbsp;·&nbsp; <strong>Name:</strong> ${esc(job.job_name)}` : ""}
+            ${job.job_type ? ` &nbsp;·&nbsp; <strong>Type:</strong> ${esc(job.job_type)}` : ""}
+            <br>
+            <strong>Location:</strong>
+            ${job.location
+              ? `<span style="color:var(--text)">${esc(job.location)}</span>`
+              : '<span style="color:var(--red)">⚠ Not set</span>'}
+            &nbsp;·&nbsp;
+            <strong>Status:</strong> ${esc(job.work_status || "—")}
+            &nbsp;·&nbsp;
+            <strong>Year:</strong> ${job.year}
+          </div>
+          ${job.job_description ? `<div class="job-meta" style="margin-top:2px;">${esc(job.job_description.substring(0,100))}${job.job_description.length > 100 ? "…" : ""}</div>` : ""}
+          ${provDate}
         </div>
-        ${job.job_description
-          ? `<div class="job-meta" style="margin-top:2px;">${esc(job.job_description.substring(0, 100))}${job.job_description.length > 100 ? "…" : ""}</div>`
-          : ""}
-      </div>
-    </div>
-  `).join("");
+      </div>`;
+  }).join("");
 }
 
 // ---------------------------------------------------------------------------
 // Selection
 // ---------------------------------------------------------------------------
 function toggleSelection(idx) {
-  if (selectedIdxs.has(idx)) {
-    selectedIdxs.delete(idx);
-  } else {
-    selectedIdxs.add(idx);
-  }
-  const cb = document.getElementById(`cb-${idx}`);
+  if (selectedIdxs.has(idx)) { selectedIdxs.delete(idx); } else { selectedIdxs.add(idx); }
+  const cb  = document.getElementById(`cb-${idx}`);
   const row = document.getElementById(`ji-${idx}`);
-  if (cb) cb.checked = selectedIdxs.has(idx);
+  if (cb)  cb.checked = selectedIdxs.has(idx);
   if (row) row.classList.toggle("selected", selectedIdxs.has(idx));
   updateSubmitButton();
   checkLocationWarning();
 }
 
-function selectAll() {
-  allJobs.forEach((_, i) => {
-    selectedIdxs.add(i);
-    const cb = document.getElementById(`cb-${i}`);
-    const row = document.getElementById(`ji-${i}`);
-    if (cb) cb.checked = true;
-    if (row) row.classList.add("selected");
-  });
-  updateSubmitButton();
-  checkLocationWarning();
-}
-
-function deselectAll() {
-  allJobs.forEach((_, i) => {
-    const cb = document.getElementById(`cb-${i}`);
-    const row = document.getElementById(`ji-${i}`);
-    if (cb) cb.checked = false;
-    if (row) row.classList.remove("selected");
-  });
-  selectedIdxs.clear();
-  updateSubmitButton();
-  hide("loc-warning");
-}
-
-function updateSubmitButton() {
-  setDisabled("btn-submit", selectedIdxs.size === 0);
-}
+function updateSubmitButton() { setDisabled("btn-submit", selectedIdxs.size === 0); }
 
 function checkLocationWarning() {
-  const anyBlank = Array.from(selectedIdxs).some(i => !allJobs[i].location);
+  const anyBlank = Array.from(selectedIdxs).some(i => !filteredJobs[i].location);
   document.getElementById("loc-warning").classList.toggle("hidden", !anyBlank);
 }
 
 // ---------------------------------------------------------------------------
-// Batch submission
+// Provision dialog
 // ---------------------------------------------------------------------------
-async function submitBatch() {
+function showProvisionDialog() {
   if (selectedIdxs.size === 0) { alert("Select at least one job."); return; }
-
-  // Build job payload; use location override for blank locations
+  const jobs = Array.from(selectedIdxs).sort((a,b) => a-b).map(i => filteredJobs[i]);
   const locDefault = document.getElementById("inp-loc-default").value.trim();
 
-  const jobs = [];
-  for (const idx of Array.from(selectedIdxs).sort((a, b) => a - b)) {
-    const job = allJobs[idx];
-    const locName = job.location || locDefault;
+  // Build preview
+  const lines = jobs.map(j => {
+    const loc = j.location || locDefault || "—";
+    return `<strong>${esc(j.job_number)}</strong> &nbsp;·&nbsp; SP: <code>${esc(j.job_number)}</code> &nbsp;·&nbsp; SiteDocs: ${esc(j.job_name || j.job_description || j.job_number)} / ${esc(loc)}`;
+  }).join("<br>");
 
-    if (!locName) {
-      showMsg("submit-error",
-        `Job ${job.job_number} has no location set. ` +
-        "Please enter a default address in the field above.", "error");
+  document.getElementById("provision-preview").innerHTML = lines;
+  show("provision-dialog");
+  hide("submit-error");
+  // Scroll footer into view
+  document.getElementById("provision-dialog").scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
+async function confirmProvision() {
+  const doSP = document.getElementById("chk-sharepoint").checked;
+  const doSD = document.getElementById("chk-sitedocs").checked;
+  if (!doSP && !doSD) { alert("Select at least one provisioning option."); return; }
+
+  const locDefault = document.getElementById("inp-loc-default").value.trim();
+  const jobs = [];
+
+  for (const idx of Array.from(selectedIdxs).sort((a,b) => a-b)) {
+    const job = filteredJobs[idx];
+    const locName = job.location || locDefault;
+    if (doSD && !locName) {
+      showMsg("submit-error", `Job ${job.job_number} has no location. Enter a default address above.`, "error");
       return;
     }
-
     jobs.push({
       job_number:    job.job_number,
       client_code:   job.client,
-      location_name: locName,
+      location_name: locName || "",
+      create_sharepoint: doSP,
+      create_sitedocs:   doSD,
     });
   }
 
+  hide("provision-dialog");
   setEl("submit-error", "", true);
   hide("results-card");
   show("batch-card");
   hide("btn-back");
 
-  // Render a pending row for every job
   const panel = document.getElementById("progress-panel");
   panel.innerHTML = "";
-  jobs.forEach(j => {
-    panel.insertAdjacentHTML("beforeend", makeResultRow(j.job_number, "waiting", "Queued"));
-  });
-
-  // Mark first job as processing
+  jobs.forEach(j => panel.insertAdjacentHTML("beforeend", makeResultRow(j.job_number, "waiting", "Queued")));
   setRowState(jobs[0].job_number, "processing", "Initialising…");
-
   setDisabled("btn-submit", true);
 
   try {
     const res = await fetch("/create", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {"Content-Type": "application/json"},
       body: JSON.stringify({ jobs }),
     });
-
     const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || res.statusText);
 
-    if (!res.ok) {
-      throw new Error(data.detail || res.statusText);
-    }
-
-    // Render per-job results
     (data.jobs_processed || []).forEach(r => {
-      if (r.status === "success") {
-        setRowState(r.job_number, "success", "Provisioned", r.sp_folder_url, r.sitedocs_url);
-      } else if (r.status === "error") {
-        setRowState(r.job_number, "error", r.error || "Unknown error");
-      }
+      if (r.status === "success") setRowState(r.job_number, "success", "Provisioned", r.sp_folder_url, r.sitedocs_url);
+      else if (r.status === "error") setRowState(r.job_number, "error", r.error || "Unknown error");
     });
 
-    // Show summary
     if (data.status === "success") {
       showMsg("batch-summary", `✓ All ${jobs.length} job(s) provisioned successfully.`, "success");
     } else {
       showMsg("batch-summary",
         `Stopped at job ${data.failed_at_job || "unknown"}. ` +
-        `${(data.jobs_processed || []).filter(r => r.status === "success").length}/${jobs.length} completed.`,
-        "error");
+        `${(data.jobs_processed||[]).filter(r=>r.status==="success").length}/${jobs.length} completed.`, "error");
     }
-
   } catch (e) {
-    // Network-level failure
     jobs.forEach(j => setRowState(j.job_number, "error", "Request failed: " + e.message));
     showMsg("batch-summary", "Batch request failed: " + e.message, "error");
   }
@@ -717,95 +652,105 @@ async function submitBatch() {
 }
 
 // ---------------------------------------------------------------------------
-// Row rendering helpers
+// Row rendering
 // ---------------------------------------------------------------------------
 function makeResultRow(jobNumber, iconClass, msg, spUrl, sdUrl) {
   return `
-    <div class="job-result-row ${iconClass === "success" ? "success" : iconClass === "error" ? "error" : "processing"}"
-         id="row-${CSS.escape(jobNumber)}">
-      <div class="step-icon ${iconClass}">
-        ${iconClass === "success" ? "✓" : iconClass === "error" ? "✕" : ""}
-      </div>
+    <div class="job-result-row ${iconClass==="success"?"success":iconClass==="error"?"error":"processing"}" id="row-${CSS.escape(jobNumber)}">
+      <div class="step-icon ${iconClass}">${iconClass==="success"?"✓":iconClass==="error"?"✕":""}</div>
       <div class="result-detail">
         <div class="result-detail-job">${esc(jobNumber)}</div>
-        <div class="result-detail-msg ${iconClass === "error" ? "err" : ""}">${esc(msg)}</div>
-        ${spUrl || sdUrl ? `
-          <div class="result-links">
-            ${spUrl ? `<a href="${esc(spUrl)}" target="_blank" class="result-link sp">📁 SharePoint Folder</a>` : ""}
-            ${sdUrl ? `<a href="${esc(sdUrl)}" target="_blank" class="result-link sd">📍 SiteDocs Record</a>` : ""}
-          </div>` : ""}
+        <div class="result-detail-msg ${iconClass==="error"?"err":""}">${esc(msg)}</div>
+        ${spUrl||sdUrl ? `<div class="result-links">
+          ${spUrl ? `<a href="${esc(spUrl)}" target="_blank" class="result-link sp">📁 SharePoint Folder</a>` : ""}
+          ${sdUrl ? `<a href="${esc(sdUrl)}" target="_blank" class="result-link sd">📍 SiteDocs Record</a>` : ""}
+        </div>` : ""}
       </div>
     </div>`;
 }
 
 function setRowState(jobNumber, iconClass, msg, spUrl, sdUrl) {
-  const rowId = "row-" + jobNumber.replace(/[^a-zA-Z0-9-_]/g, "_");
-  const existing = document.getElementById(rowId) ||
-    document.querySelector(`[id^="row-"]`);
-
-  // Try to find by job number text content
   const allRows = document.querySelectorAll(".job-result-row");
   let target = null;
-  allRows.forEach(r => {
-    if (r.querySelector(".result-detail-job")?.textContent === jobNumber) {
-      target = r;
-    }
-  });
+  allRows.forEach(r => { if (r.querySelector(".result-detail-job")?.textContent === jobNumber) target = r; });
+  if (target) target.outerHTML = makeResultRow(jobNumber, iconClass, msg, spUrl, sdUrl);
+}
 
-  if (target) {
-    target.outerHTML = makeResultRow(jobNumber, iconClass, msg, spUrl, sdUrl);
+function resetToSearch() { hide("batch-card"); show("results-card"); hide("btn-back"); }
+
+// ---------------------------------------------------------------------------
+// SiteDocs Locations
+// ---------------------------------------------------------------------------
+async function loadLocations() {
+  setEl("loc-error", "", true);
+  document.getElementById("loc-loading").classList.remove("hidden");
+  setDisabled("btn-load-locs", true);
+  try {
+    const res = await fetch("/locations");
+    if (!res.ok) { const e = await res.json().catch(()=>({detail:res.statusText})); throw new Error(e.detail||res.statusText); }
+    allLocations = await res.json();
+    // Sort by CreatedOn DESC
+    allLocations.sort((a,b) => new Date(b.CreatedOn||0) - new Date(a.CreatedOn||0));
+    filterLocations();
+    const badge = document.getElementById("loc-count");
+    badge.textContent = allLocations.length;
+    badge.style.display = "inline-block";
+  } catch (e) {
+    showMsg("loc-error", "Failed to load locations: " + e.message, "error");
+  } finally {
+    document.getElementById("loc-loading").classList.add("hidden");
+    setDisabled("btn-load-locs", false);
   }
 }
 
-// ---------------------------------------------------------------------------
-// Navigation helpers
-// ---------------------------------------------------------------------------
-function resetToSearch() {
-  hide("batch-card");
-  show("results-card");
-  hide("btn-back");
+function filterLocations() {
+  const search   = (document.getElementById("inp-loc-search").value||"").toLowerCase();
+  const archived = document.getElementById("inp-loc-archived").value;
+  let filtered = allLocations.filter(loc => {
+    const matchSearch = !search ||
+      (loc.Name||"").toLowerCase().includes(search) ||
+      (loc.Address||"").toLowerCase().includes(search) ||
+      (loc.Description||"").toLowerCase().includes(search);
+    const matchArchived = archived==="all" ? true : archived==="archived" ? loc.IsArchived : !loc.IsArchived;
+    return matchSearch && matchArchived;
+  });
+  renderLocations(filtered);
+}
+
+function renderLocations(locs) {
+  const el = document.getElementById("loc-list");
+  if (!locs.length) { el.innerHTML = '<div class="empty-state">No locations match your filters.</div>'; return; }
+  el.innerHTML = locs.map(loc => {
+    const badge = loc.IsArchived
+      ? '<span class="loc-badge">Archived</span>'
+      : '<span class="loc-badge active">Active</span>';
+    const start = loc.StartDate ? new Date(loc.StartDate).toLocaleDateString() : "—";
+    return `
+      <div class="loc-item ${loc.IsArchived?"loc-archived":""}">
+        <div class="loc-name">${esc(loc.Name||"—")}${badge}</div>
+        <div class="loc-meta">
+          ${esc(loc.Address||"—")} &nbsp;·&nbsp; Start: ${start}
+          ${loc.Description&&loc.Description!=="\_"&&loc.Description!=="\_\_"?` &nbsp;·&nbsp; ${esc(loc.Description)}`:""}
+        </div>
+      </div>`;
+  }).join("");
 }
 
 // ---------------------------------------------------------------------------
 // Utility
 // ---------------------------------------------------------------------------
 function esc(s) {
-  if (s == null) return "";
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  if (s==null) return "";
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
-
 function show(id)  { document.getElementById(id)?.classList.remove("hidden"); }
 function hide(id)  { document.getElementById(id)?.classList.add("hidden"); }
+function setEl(id, text, hidden) { const el=document.getElementById(id); if(!el)return; el.textContent=text; el.classList.toggle("hidden",!!hidden); }
+function showMsg(id, text, type) { const el=document.getElementById(id); if(!el)return; el.textContent=text; el.className=`msg ${type}`; el.classList.remove("hidden"); }
+function setDisabled(id, disabled) { const el=document.getElementById(id); if(el) el.disabled=disabled; }
 
-function setEl(id, text, hidden) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.textContent = text;
-  el.classList.toggle("hidden", !!hidden);
-}
-
-function showMsg(id, text, type) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.textContent = text;
-  el.className = `msg ${type}`;
-  el.classList.remove("hidden");
-}
-
-function setDisabled(id, disabled) {
-  const el = document.getElementById(id);
-  if (el) el.disabled = disabled;
-}
-
-// Trigger search on Enter in job/client inputs
-["inp-job", "inp-client"].forEach(id => {
-  document.getElementById(id)?.addEventListener("keydown", e => {
-    if (e.key === "Enter") performSearch();
-  });
+["inp-job","inp-client"].forEach(id => {
+  document.getElementById(id)?.addEventListener("keydown", e => { if(e.key==="Enter") performSearch(); });
 });
 </script>
 </body>
