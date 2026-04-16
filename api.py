@@ -145,16 +145,18 @@ def search_jobs(
 
     records = [
         JobRecord(
-            job_number        = r["job_number"],
-            job_date          = r["job_date"],
-            job_description   = r["job_description"],
-            job_name          = r["job_name"],
-            job_type          = r["job_type"],
-            client            = r["client"] or "",
-            location          = r["location"],
-            work_status       = r["work_status"],
-            year              = r["year"] or datetime.now().year,
+            job_number         = r["job_number"],
+            job_date           = r["job_date"],
+            job_description    = r["job_description"],
+            job_name           = r["job_name"],
+            job_type           = r["job_type"],
+            client             = r["client"] or "",
+            company_name       = r.get("company_name"),
+            location           = r["location"],
+            work_status        = r["work_status"],
+            year               = r["year"] or datetime.now().year,
             instructing_person = r["instructing_person"],
+            provisioned_date   = r.get("provisioned_date"),
         )
         for r in rows
     ]
@@ -263,33 +265,54 @@ def create_job_batch(req: BatchCreationRequest):
                     batch_id, job_number, client_code,
                 )
 
-            # --- Step 3: Create SharePoint folder ---
-            log.info(
-                "[%s] %s: creating SharePoint folder Job Files/%d/%s …",
-                batch_id, job_number, year, job_number,
-            )
-            sp_folder_url = sharepoint_helper.copy_template_folder(job_number, year)
+            # --- Step 3: Create SharePoint folder (optional) ---
+            create_sp = getattr(job_req, "create_sharepoint", True)
+            create_sd = getattr(job_req, "create_sitedocs", True)
 
-            result.sp_folder_url  = sp_folder_url
-            result.sp_folder_path = f"Job Files/{year}/{job_number}"
-            log.info(
-                "[%s] %s: SharePoint folder created → %s",
-                batch_id, job_number, sp_folder_url,
-            )
+            sp_folder_url = None
+            if create_sp:
+                log.info(
+                    "[%s] %s: creating SharePoint folder Job Files/%d/%s …",
+                    batch_id, job_number, year, job_number,
+                )
+                sp_folder_url = sharepoint_helper.copy_template_folder(job_number, year)
 
-            # --- Step 4: Create SiteDocs location ---
-            log.info("[%s] %s: creating SiteDocs location …", batch_id, job_number)
-            sitedocs_id = sited.create_location(
-                job_number      = job_number,
-                job_description = job["job_description"],
-                location        = location_name,
-                job_date_iso    = job_date_iso,
-                company_name    = company_name,
-            )
+            if sp_folder_url:
+                result.sp_folder_url  = sp_folder_url
+                result.sp_folder_path = f"Job Files/{year}/{job_number}"
+                log.info(
+                    "[%s] %s: SharePoint folder created → %s",
+                    batch_id, job_number, sp_folder_url,
+                )
 
-            result.sitedocs_id  = sitedocs_id
-            result.sitedocs_url = f"https://app.sitedocs.com/locations/{sitedocs_id}"
+            # --- Step 4: Create SiteDocs location (optional) ---
+            sitedocs_id = None
+            if create_sd:
+                log.info("[%s] %s: creating SiteDocs location …", batch_id, job_number)
+                sitedocs_id = sited.create_location(
+                    job_number      = job_number,
+                    job_description = job["job_description"],
+                    location        = location_name,
+                    job_date_iso    = job_date_iso,
+                    company_name    = company_name,
+                )
+                result.sitedocs_id  = sitedocs_id
+                result.sitedocs_url = f"https://app.sitedocs.com/locations/{sitedocs_id}"
             result.status       = "success"
+
+            # Mark job as provisioned in Latitude (dteJobUserField25)
+            try:
+                api_url = os.environ.get("LATITUDE_API_URL", "").rstrip("/")
+                if api_url:
+                    import requests as _req
+                    _req.patch(
+                        f"{api_url}/api/markProvisioned",
+                        json={"job_number": job_number},
+                        timeout=10,
+                    )
+                    log.info("[%s] %s: marked provisioned in Latitude", batch_id, job_number)
+            except Exception as mark_exc:
+                log.warning("[%s] %s: markProvisioned failed (non-fatal): %s", batch_id, job_number, mark_exc)
 
             log.info(
                 "[%s] %s: complete — SiteDocs id=%s",
@@ -319,6 +342,36 @@ def create_job_batch(req: BatchCreationRequest):
         started_at     = started_at,
         completed_at   = datetime.now(timezone.utc),
     )
+
+
+
+@app.get("/locations")
+def get_locations():
+    """
+    Fetch all locations from SiteDocs API.
+    Returns the raw list for read-only display in the UI.
+    """
+    api_key = os.environ.get("SITEDOCS_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="SITEDOCS_API_KEY not configured")
+
+    import requests as req
+    try:
+        resp = req.get(
+            "https://api-1.sitedocs.com/api/v1/locations",
+            headers={"Accept": "application/json", "Authorization": api_key},
+            params={"count": 100},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        # API may return a list or a dict with a results key
+        if isinstance(data, list):
+            return data
+        return data.get("results", data.get("locations", []))
+    except req.exceptions.RequestException as exc:
+        log.exception("get_locations: SiteDocs API error")
+        raise HTTPException(status_code=502, detail=f"SiteDocs API error: {exc}")
 
 
 # ---------------------------------------------------------------------------
