@@ -17,7 +17,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # ── Application code ─────────────────────────────────────────────────────────
-COPY api.py models.py latitude.py sharepoint_helper.py sited.py index.html ./
+COPY api.py models.py latitude.py postgres.py sharepoint_helper.py sited.py index.html ./
 
 # ── Non-root user ─────────────────────────────────────────────────────────────
 RUN useradd --create-home --no-log-init appuser
