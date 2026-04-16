@@ -70,6 +70,14 @@ foreach ($e in $envs) {
     }
 }
 
+# --- Email notification (opt-in) ---------------------------------------
+# Set these to get an email summary whenever jobs get auto-provisioned.
+# Graph credentials (GRAPH_*) come from the Container App env vars above.
+# The sender mailbox must exist in the Azure AD tenant.
+# Requires Mail.Send application permission on the app registration.
+if (-not $env:NOTIFY_EMAIL_FROM) { $env:NOTIFY_EMAIL_FROM = "alerts@velocitygeomatics.ca" }
+if (-not $env:NOTIFY_EMAIL_TO)   { $env:NOTIFY_EMAIL_TO   = "norm.dickson@magnussolutions.ca" }
+
 # --- Run the provisioner -----------------------------------------------
 # Safety defaults: 7-day lookback, cap at 5 jobs per run.
 # Remove --max / shorten --lookback once you're comfortable.

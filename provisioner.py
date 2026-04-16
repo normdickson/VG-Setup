@@ -53,6 +53,7 @@ from datetime import datetime, timezone, timedelta
 import latitude
 import sharepoint_helper
 import sited
+import notify
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -136,8 +137,20 @@ def candidate_jobs() -> list[dict]:
     return out[:MAX_JOBS]
 
 
-def provision_one(job: dict) -> None:
-    """Provision a single job. Raises on failure."""
+def provision_one(job: dict) -> dict:
+    """
+    Provision a single job. Raises on failure.
+
+    Returns a dict summarising what was created, for use in notifications:
+        {
+          "job_number":      str,
+          "company_name":    str | None,
+          "location":        str,
+          "sp_url":          str | None,
+          "sitedocs_id":     str | None,
+          "sitedocs_url":    str | None,
+        }
+    """
     db          = latitude.get_db()
     job_number  = job["job_number"]
     client_code = job["client"]
@@ -147,15 +160,25 @@ def provision_one(job: dict) -> None:
 
     company_name = db.get_client_name(client_code)
 
+    summary = {
+        "job_number":   job_number,
+        "company_name": company_name,
+        "location":     location,
+        "sp_url":       None,
+        "sitedocs_id":  None,
+        "sitedocs_url": None,
+    }
+
     if DRY_RUN:
         log.info("DRY_RUN: would provision %s (client=%s, location=%s)",
                  job_number, company_name or client_code, location)
-        return
+        return summary
 
     log.info("provisioning %s (client=%s, year=%d)", job_number, company_name or client_code, year)
 
     # 1) SharePoint folder
     sp_url = sharepoint_helper.copy_template_folder(job_number, year)
+    summary["sp_url"] = sp_url
     log.info("  SharePoint folder created: %s", sp_url)
 
     # 2) SiteDocs location
@@ -166,6 +189,8 @@ def provision_one(job: dict) -> None:
         job_date_iso    = job_date,
         company_name    = company_name,
     )
+    summary["sitedocs_id"]  = sitedocs_id
+    summary["sitedocs_url"] = f"https://app.sitedocs.com/locations/{sitedocs_id}" if sitedocs_id else None
     log.info("  SiteDocs location created: id=%s", sitedocs_id)
 
     # 3) Stamp dteJobUserField25 so the poller won't re-provision next run.
@@ -177,6 +202,53 @@ def provision_one(job: dict) -> None:
         # the date is a soft error — log loudly but don't raise, otherwise the
         # caller will think the whole job failed.
         log.error("  WARNING: could not mark %s as provisioned: %s", job_number, exc)
+
+    return summary
+
+
+def _build_email_body(successes: list[dict]) -> str:
+    """Render an HTML summary of successful provisions."""
+    rows = []
+    for s in successes:
+        company = s.get("company_name") or "—"
+        loc     = s.get("location")     or "—"
+        sp      = s.get("sp_url")
+        sd      = s.get("sitedocs_url")
+        links = []
+        if sp: links.append(f'<a href="{sp}">SharePoint folder</a>')
+        if sd: links.append(f'<a href="{sd}">SiteDocs location</a>')
+        link_html = " &nbsp;·&nbsp; ".join(links) if links else "—"
+
+        rows.append(
+            f"<tr>"
+            f"<td style='padding:6px 12px;font-weight:600;'>{s['job_number']}</td>"
+            f"<td style='padding:6px 12px;'>{company}</td>"
+            f"<td style='padding:6px 12px;'>{loc}</td>"
+            f"<td style='padding:6px 12px;'>{link_html}</td>"
+            f"</tr>"
+        )
+
+    table = (
+        "<table style='border-collapse:collapse;font-family:Segoe UI,Arial,sans-serif;font-size:13px;'>"
+        "<thead><tr style='background:#142644;color:#fff;'>"
+        "<th style='padding:6px 12px;text-align:left;'>Job</th>"
+        "<th style='padding:6px 12px;text-align:left;'>Client</th>"
+        "<th style='padding:6px 12px;text-align:left;'>Location</th>"
+        "<th style='padding:6px 12px;text-align:left;'>Links</th>"
+        "</tr></thead>"
+        "<tbody>" + "".join(rows) + "</tbody></table>"
+    )
+
+    return (
+        "<p style='font-family:Segoe UI,Arial,sans-serif;font-size:14px;'>"
+        f"Auto-provisioned <b>{len(successes)}</b> new job(s) from Latitude:"
+        "</p>" + table +
+        "<p style='font-family:Segoe UI,Arial,sans-serif;font-size:11px;color:#888;margin-top:18px;'>"
+        "Sent by VG-Setup provisioner. "
+        "To stop these emails, unset NOTIFY_EMAIL_TO in run-provisioner.ps1 "
+        "or the Container App configuration."
+        "</p>"
+    )
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -255,15 +327,31 @@ def main(argv: list[str] | None = None) -> int:
     log.info("found %d candidate job(s): %s",
              len(jobs), ", ".join(j["job_number"] for j in jobs))
 
+    successes: list[dict] = []
     failures = 0
     for job in jobs:
         try:
-            provision_one(job)
+            summary = provision_one(job)
+            # Only count as a real success if we actually created something.
+            if not DRY_RUN and (summary.get("sp_url") or summary.get("sitedocs_id")):
+                successes.append(summary)
         except Exception as exc:
             failures += 1
             log.exception("FAILED to provision %s: %s", job["job_number"], exc)
 
     log.info("done: %d ok, %d failed", len(jobs) - failures, failures)
+
+    # Send summary email if anything was actually provisioned.
+    if successes:
+        subject = (
+            f"VG-Setup: {len(successes)} job(s) auto-provisioned"
+            + (f" — {successes[0]['job_number']}" if len(successes) == 1 else "")
+        )
+        try:
+            notify.send_email(subject, _build_email_body(successes))
+        except Exception as exc:
+            log.warning("email notification failed (non-fatal): %s", exc)
+
     return 1 if failures else 0
 
 
