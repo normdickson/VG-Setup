@@ -302,14 +302,7 @@ def create_job_batch(req: BatchCreationRequest):
 
             # Mark job as provisioned in Latitude (dteJobUserField25)
             try:
-                api_url = os.environ.get("LATITUDE_API_URL", "").rstrip("/")
-                if api_url:
-                    import requests as _req
-                    _req.patch(
-                        f"{api_url}/api/markProvisioned",
-                        json={"job_number": job_number},
-                        timeout=10,
-                    )
+                if db.mark_provisioned(job_number):
                     log.info("[%s] %s: marked provisioned in Latitude", batch_id, job_number)
             except Exception as mark_exc:
                 log.warning("[%s] %s: markProvisioned failed (non-fatal): %s", batch_id, job_number, mark_exc)

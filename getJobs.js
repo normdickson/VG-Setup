@@ -48,7 +48,8 @@ app.http('getJobs', {
                     Client,
                     Locality,
                     [Work Status],
-                    [Instructing Person]
+                    [Instructing Person],
+                    dteJobUserField25 AS provisioned_date
                 FROM dbo.tblJobs
                 WHERE 1=1
             `;
@@ -105,6 +106,48 @@ app.http('getStatuses', {
             };
         } catch (err) {
             context.error('getStatuses error:', err);
+            return { status: 500, body: err.message };
+        }
+    }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/markProvisioned
+// Body: { job_number: "260174" }
+// Sets tblJobs.dteJobUserField25 = GETDATE() for the given job.
+// ---------------------------------------------------------------------------
+app.http('markProvisioned', {
+    methods: ['POST'],
+    authLevel: 'anonymous',
+    handler: async (request, context) => {
+        try {
+            const body      = await request.json();
+            const jobNumber = (body && body.job_number) ? String(body.job_number).trim() : null;
+
+            if (!jobNumber) {
+                return { status: 400, body: 'job_number is required' };
+            }
+
+            await getPool();
+            const req = new sql.Request();
+            req.input('jobNumber', sql.NVarChar, jobNumber);
+
+            const result = await req.query(`
+                UPDATE dbo.tblJobs
+                SET dteJobUserField25 = GETDATE()
+                WHERE [Job Number] = @jobNumber
+            `);
+
+            if (result.rowsAffected[0] === 0) {
+                return { status: 404, body: `Job '${jobNumber}' not found` };
+            }
+
+            return {
+                status: 200,
+                jsonBody: { job_number: jobNumber, provisioned: true }
+            };
+        } catch (err) {
+            context.error('markProvisioned error:', err);
             return { status: 500, body: err.message };
         }
     }

@@ -168,6 +168,16 @@ def provision_one(job: dict) -> None:
     )
     log.info("  SiteDocs location created: id=%s", sitedocs_id)
 
+    # 3) Stamp dteJobUserField25 so the poller won't re-provision next run.
+    try:
+        if db.mark_provisioned(job_number):
+            log.info("  marked provisioned in Latitude (dteJobUserField25)")
+    except Exception as exc:
+        # Provisioning artifacts were created successfully; failing to stamp
+        # the date is a soft error — log loudly but don't raise, otherwise the
+        # caller will think the whole job failed.
+        log.error("  WARNING: could not mark %s as provisioned: %s", job_number, exc)
+
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Parse CLI flags. Any flag passed overrides the matching env-var default."""

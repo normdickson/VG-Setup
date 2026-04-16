@@ -70,6 +70,43 @@ class LatitudeDB:
         except Exception as exc:
             raise RuntimeError(f"Latitude API unexpected error: {exc}") from exc
 
+    def _post(self, path: str, body: dict) -> dict:
+        """Make a POST request to the Azure Function API."""
+        url = f"{self._api_url}{path}"
+        try:
+            resp = self._session.post(url, json=body, timeout=30)
+            resp.raise_for_status()
+            return resp.json() if resp.content else {}
+        except requests.exceptions.ConnectionError as exc:
+            raise RuntimeError(f"Cannot reach Latitude API at {url}: {exc}") from exc
+        except requests.exceptions.Timeout:
+            raise RuntimeError(f"Latitude API timed out: {url}")
+        except requests.exceptions.HTTPError as exc:
+            raise RuntimeError(f"Latitude API error {exc.response.status_code}: {exc}") from exc
+        except Exception as exc:
+            raise RuntimeError(f"Latitude API unexpected error: {exc}") from exc
+
+    def mark_provisioned(self, job_number: str) -> bool:
+        """
+        Stamp dteJobUserField25 = GETDATE() for the given job number.
+
+        Returns:
+            True  if the row was updated.
+            False if the markProvisioned endpoint isn't deployed yet (non-fatal).
+
+        Raises:
+            RuntimeError on any other error (including 404 job-not-found).
+        """
+        try:
+            self._post("/api/markProvisioned", body={"job_number": job_number})
+            return True
+        except RuntimeError as exc:
+            # Endpoint may not be deployed yet — warn but don't explode.
+            if "404" in str(exc):
+                log.warning("mark_provisioned: endpoint returned 404 (not yet deployed?): %s", exc)
+                return False
+            raise
+
     # ------------------------------------------------------------------
     # Public query methods — same signatures as the original pyodbc version
     # ------------------------------------------------------------------
@@ -204,6 +241,10 @@ def _normalise_job(row: dict) -> dict:
         row.get("Job Date") or row.get("job_date") or row.get("JobDate")
     )
 
+    provisioned_date = _parse_date(
+        row.get("provisioned_date") or row.get("dteJobUserField25")
+    )
+
     return {
         "job_number":         row.get("Job Number") or row.get("job_number") or row.get("JobNumber") or "",
         "job_date":           job_date,
@@ -216,6 +257,9 @@ def _normalise_job(row: dict) -> dict:
         "work_status":        row.get("Work Status") or row.get("work_status") or row.get("WorkStatus"),
         "instructing_person": row.get("Instructing Person") or row.get("instructing_person"),
         "year":               job_date.year if job_date else None,
+        # Set to the datetime this job was provisioned (tblJobs.dteJobUserField25);
+        # None => not yet provisioned. Used by provisioner.py for deduplication.
+        "provisioned_date":   provisioned_date,
     }
 
 
