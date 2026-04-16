@@ -211,7 +211,8 @@ def _normalise_job(row: dict) -> dict:
         "job_name":           row.get("txtJobName") or row.get("job_name") or row.get("JobName"),
         "job_type":           row.get("JobType") or row.get("job_type"),
         "client":             row.get("Client") or row.get("client") or "",
-        "location":           row.get("Locality") or row.get("location"),
+        # Location for SiteDocs Address: use Job Description (fuller text than Locality)
+        "location":           row.get("Job Description") or row.get("job_description") or row.get("JobDescription") or row.get("Locality") or row.get("location"),
         "work_status":        row.get("Work Status") or row.get("work_status") or row.get("WorkStatus"),
         "instructing_person": row.get("Instructing Person") or row.get("instructing_person"),
         "year":               job_date.year if job_date else None,
