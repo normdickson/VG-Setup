@@ -19,6 +19,16 @@ $ErrorActionPreference = "Continue"
 # PS 7.3+ only — safely ignored on 5.1.
 try { $PSNativeCommandUseErrorActionPreference = $false } catch {}
 
+# Force UTF-8 end-to-end so the log file isn't garbled when running under
+# Task Scheduler (no attached console → Python defaults to cp1252; PowerShell
+# captures the bytes as UTF-16 or cp1252 → garbage). Setting PYTHONIOENCODING
+# makes Python emit UTF-8; setting Console.OutputEncoding makes PowerShell
+# read it as UTF-8; Out-File -Encoding utf8 writes it as UTF-8.
+$env:PYTHONIOENCODING         = "utf-8"
+$env:PYTHONUTF8               = "1"
+[Console]::OutputEncoding     = [System.Text.Encoding]::UTF8
+$OutputEncoding               = [System.Text.Encoding]::UTF8
+
 $repo = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $repo
 
@@ -29,7 +39,9 @@ $log    = Join-Path $logDir ("provisioner-{0}.log" -f (Get-Date -Format yyyyMMdd
 
 function Write-Log {
     param([string]$Message)
-    "$(Get-Date -Format o)  $Message" | Tee-Object -FilePath $log -Append
+    $line = "$(Get-Date -Format o)  $Message"
+    Write-Host $line
+    $line | Out-File -FilePath $log -Append -Encoding utf8
 }
 
 Write-Log "=== provisioner run starting ==="
@@ -63,8 +75,10 @@ foreach ($e in $envs) {
 # Remove --max / shorten --lookback once you're comfortable.
 Write-Log "running: python provisioner.py --lookback 7 --max 5 -v"
 
-# Merge stderr into stdout so Python log lines end up in the tee'd file.
-& python provisioner.py --lookback 7 --max 5 -v 2>&1 | Tee-Object -FilePath $log -Append
+# Merge stderr into stdout and write to the log as UTF-8 explicitly.
+& python provisioner.py --lookback 7 --max 5 -v 2>&1 |
+    ForEach-Object { "$_" } |
+    Tee-Object -FilePath $log -Append -Encoding utf8
 $code = $LASTEXITCODE
 
 Write-Log "=== provisioner run complete (exit=$code) ==="
