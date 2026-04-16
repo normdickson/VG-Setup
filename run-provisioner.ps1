@@ -11,6 +11,11 @@
 
 $ErrorActionPreference = "Stop"
 
+# Python's logging module writes to stderr. Under PS 7 with ErrorActionPreference=Stop,
+# that would be treated as a terminating error on the first log line. Opt out so only
+# a non-zero exit code from python is treated as failure.
+$PSNativeCommandUseErrorActionPreference = $false
+
 $repo = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $repo
 
@@ -46,14 +51,15 @@ try {
     # Safety defaults: 7-day lookback, cap at 5 jobs per run.
     # Remove --max / shorten --lookback once you're comfortable.
     Write-Log "running: python provisioner.py --lookback 7 --max 5 -v"
-    & python provisioner.py --lookback 7 --max 5 -v *>&1 | Tee-Object -FilePath $log -Append
+    # Merge streams (stdout + stderr) so Python log lines end up in the file.
+    & python provisioner.py --lookback 7 --max 5 -v 2>&1 | Tee-Object -FilePath $log -Append
     $code = $LASTEXITCODE
     Write-Log "=== provisioner run complete (exit=$code) ==="
     exit $code
 }
 catch {
     Write-Log "FATAL  $($_.Exception.Message)"
-    Write-Log $_.ScriptStackTrace
+    if ($_.ScriptStackTrace) { Write-Log $_.ScriptStackTrace }
     exit 2
 }
 
