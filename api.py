@@ -44,6 +44,7 @@ from models import (
     JobCreationResult,
 )
 import latitude
+import postgres
 import sharepoint_helper
 import sited
 
@@ -67,9 +68,10 @@ async def lifespan(app: FastAPI):
     # Startup: nothing required (DB connects lazily on first request)
     log.info("Latitude Job Setup service starting")
     yield
-    # Shutdown: close DB connection
+    # Shutdown: close DB connections
     log.info("Latitude Job Setup service shutting down")
     latitude.close_db()
+    postgres.close_pool()
 
 
 # ---------------------------------------------------------------------------
@@ -163,6 +165,52 @@ def search_jobs(
 
     log.info("search_jobs: returned %d records", len(records))
     return JobSearchResponse(jobs=records, total=len(records))
+
+
+@app.get("/search/details")
+def search_details(jobNumber: str):
+    """
+    Return child records (time tickets + forms) for a given Latitude job.
+
+    Query parameters:
+        jobNumber  6-character Latitude job number (e.g. "2022G0").
+                   Used as exact match on time_tickets.job_no and as the
+                   LEFT(name, 6) prefix on SiteDocs locations to find forms.
+
+    Response shape:
+        {
+          "time_tickets": [ { form_id, form_label, ticket_date, client,
+                              crew_chief, assistant, cc_total_hrs,
+                              sa_total_hrs, truck_km, details, approval,
+                              signed_by, signed_on }, ... ],
+          "forms":        [ { form_id, form_label, form_type,
+                              location_name, created_on,
+                              last_modified_on, due }, ... ]
+        }
+    """
+    jn = (jobNumber or "").strip()
+    if not jn or len(jn) != 6:
+        raise HTTPException(
+            status_code=400,
+            detail="jobNumber is required and must be exactly 6 characters.",
+        )
+
+    try:
+        details = postgres.get_job_details(jn)
+    except RuntimeError as exc:
+        log.exception("search_details: DB error")
+        raise HTTPException(status_code=503, detail=str(exc))
+    except Exception as exc:
+        log.exception("search_details: unexpected error")
+        raise HTTPException(status_code=500, detail=f"Internal error: {exc}")
+
+    n_tickets = len(details.get("time_tickets") or [])
+    n_forms   = len(details.get("forms") or [])
+    log.info(
+        "search_details: %s → %d time_tickets, %d forms",
+        jn, n_tickets, n_forms,
+    )
+    return details
 
 
 @app.get("/statuses", response_model=WorkStatusesResponse)

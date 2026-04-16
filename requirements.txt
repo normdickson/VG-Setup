@@ -8,6 +8,10 @@ pydantic==2.*
 # HTTP (Azure Function API + SharePoint Graph API + SiteDocs)
 requests==2.*
 
+# Postgres (SiteDocs ETL DB — used by /search/details)
+psycopg[binary]==3.*
+psycopg_pool==3.*
+
 # Utilities
 python-dotenv==1.*
 python-dateutil==2.*
