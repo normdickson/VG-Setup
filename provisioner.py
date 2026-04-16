@@ -1,0 +1,267 @@
+"""
+provisioner.py — Polling worker that auto-provisions new Latitude jobs.
+
+Runs as a one-shot script: queries Latitude for jobs that are NOT yet
+provisioned, filters by a safety window (created within last N days),
+and for each qualifying job creates the SharePoint folder and SiteDocs
+location via the same modules used by the /create API endpoint.
+
+Designed to be run in three ways:
+  1. On a schedule (Azure Container Apps Job, GitHub cron, Task Scheduler)
+     — config from env vars.
+  2. Ad-hoc from the CLI with flags (flags override env vars).
+  3. To provision one or more SPECIFIC jobs by number (--job MSL050439),
+     bypassing the lookback / status filters entirely.
+
+Environment variables (all optional; CLI flags override):
+    POLL_LOOKBACK_DAYS      Only process jobs with job_date within the last N
+                            days (default: 7).
+    POLL_STATUS_FILTER      Only process jobs with this Work Status (default:
+                            "Active"). Set to "" to disable.
+    POLL_JOB_PREFIX         Optional job-number prefix filter (e.g. "MSL").
+    POLL_DRY_RUN            "1" to log what WOULD happen without making API
+                            calls. Defaults to "0".
+    POLL_MAX_JOBS           Safety cap on how many jobs a single run can
+                            provision (default: 25).
+    POLL_DEFAULT_LOCATION   Fallback address if a job has no Locality.
+
+CLI usage:
+    # Show what the scheduled run would do, no changes
+    python provisioner.py --dry-run
+
+    # Only MSL jobs in the last 30 days, up to 10 of them
+    python provisioner.py --prefix MSL --lookback 30 --max 10
+
+    # Force-provision specific jobs (ignores filters & lookback window)
+    python provisioner.py --job MSL050439 --job MSL050440
+
+    # Disable status filter, set a default location for missing ones
+    python provisioner.py --status "" --default-location "Calgary, AB"
+
+Exit codes:
+    0  — success (including "nothing to do")
+    1  — any job failed; see logs for details
+    2  — fatal error (DB unreachable, config missing)
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+import logging
+from datetime import datetime, timezone, timedelta
+
+import latitude
+import sharepoint_helper
+import sited
+
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+
+logging.basicConfig(
+    level=os.environ.get("LOG_LEVEL", "INFO"),
+    format="%(asctime)s | %(levelname)-7s | %(name)s | %(message)s",
+)
+log = logging.getLogger("provisioner")
+
+
+# ---------------------------------------------------------------------------
+# Config — populated from env vars, may be overridden by CLI flags in main()
+# ---------------------------------------------------------------------------
+
+LOOKBACK_DAYS    = int(os.environ.get("POLL_LOOKBACK_DAYS", "7"))
+STATUS_FILTER    = os.environ.get("POLL_STATUS_FILTER", "Active")
+JOB_PREFIX       = os.environ.get("POLL_JOB_PREFIX", "")
+DRY_RUN          = os.environ.get("POLL_DRY_RUN", "0") == "1"
+MAX_JOBS         = int(os.environ.get("POLL_MAX_JOBS", "25"))
+DEFAULT_LOCATION = os.environ.get("POLL_DEFAULT_LOCATION", "").strip()
+EXPLICIT_JOBS: list[str] = []   # set by --job flags; skips candidate filtering
+
+
+# ---------------------------------------------------------------------------
+# Core
+# ---------------------------------------------------------------------------
+
+def candidate_jobs() -> list[dict]:
+    """Return jobs that should be provisioned on this run."""
+    db = latitude.get_db()
+
+    # Explicit job-number mode: fetch each by exact number, skip filters.
+    if EXPLICIT_JOBS:
+        out: list[dict] = []
+        for number in EXPLICIT_JOBS:
+            row = db.get_job(number)
+            if row is None:
+                log.error("--job %s: not found in Latitude", number)
+                continue
+            if not row.get("location") and not DEFAULT_LOCATION:
+                log.error("--job %s: has no location; pass --default-location or set one in Latitude", number)
+                continue
+            out.append(row)
+        return out
+
+    # Normal polling mode: query + filter.
+    rows = db.search_jobs(
+        job_number_filter=JOB_PREFIX or None,
+        status_filter=STATUS_FILTER or None,
+        client_filter=None,
+        limit=500,
+    )
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=LOOKBACK_DAYS)
+    out = []
+
+    for row in rows:
+        # Already provisioned?
+        if row.get("provisioned_date"):
+            continue
+
+        # Inside lookback window?
+        job_date = row.get("job_date")
+        if not job_date:
+            log.debug("skip %s: no job_date", row.get("job_number"))
+            continue
+        if job_date.tzinfo is None:
+            job_date = job_date.replace(tzinfo=timezone.utc)
+        if job_date < cutoff:
+            log.debug("skip %s: outside %d-day window", row.get("job_number"), LOOKBACK_DAYS)
+            continue
+
+        # Location present (or fallback available)?
+        if not row.get("location") and not DEFAULT_LOCATION:
+            log.warning("skip %s: no location and no POLL_DEFAULT_LOCATION", row.get("job_number"))
+            continue
+
+        out.append(row)
+
+    return out[:MAX_JOBS]
+
+
+def provision_one(job: dict) -> None:
+    """Provision a single job. Raises on failure."""
+    db          = latitude.get_db()
+    job_number  = job["job_number"]
+    client_code = job["client"]
+    year        = job["year"] or datetime.now().year
+    location    = job["location"] or DEFAULT_LOCATION
+    job_date    = job["job_date"].isoformat() if job["job_date"] else None
+
+    company_name = db.get_client_name(client_code)
+
+    if DRY_RUN:
+        log.info("DRY_RUN: would provision %s (client=%s, location=%s)",
+                 job_number, company_name or client_code, location)
+        return
+
+    log.info("provisioning %s (client=%s, year=%d)", job_number, company_name or client_code, year)
+
+    # 1) SharePoint folder
+    sp_url = sharepoint_helper.copy_template_folder(job_number, year)
+    log.info("  SharePoint folder created: %s", sp_url)
+
+    # 2) SiteDocs location
+    sitedocs_id = sited.create_location(
+        job_number      = job_number,
+        job_description = job.get("job_description"),
+        location        = location,
+        job_date_iso    = job_date,
+        company_name    = company_name,
+    )
+    log.info("  SiteDocs location created: id=%s", sitedocs_id)
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    """Parse CLI flags. Any flag passed overrides the matching env-var default."""
+    p = argparse.ArgumentParser(
+        prog="provisioner",
+        description="Auto-provision new Latitude jobs (SharePoint + SiteDocs).",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Examples:\n"
+            "  provisioner.py --dry-run\n"
+            "  provisioner.py --prefix MSL --lookback 30 --max 10\n"
+            "  provisioner.py --job MSL050439 --job MSL050440\n"
+            "  provisioner.py --status '' --default-location 'Calgary, AB'\n"
+        ),
+    )
+    p.add_argument("--lookback", type=int, metavar="DAYS",
+                   help=f"Only process jobs within last N days (default: {LOOKBACK_DAYS})")
+    p.add_argument("--status", metavar="TEXT",
+                   help=f"Work Status filter, '' to disable (default: '{STATUS_FILTER}')")
+    p.add_argument("--prefix", metavar="TEXT",
+                   help=f"Job-number prefix filter (default: '{JOB_PREFIX}')")
+    p.add_argument("--max", type=int, metavar="N", dest="max_jobs",
+                   help=f"Max jobs per run (default: {MAX_JOBS})")
+    p.add_argument("--default-location", metavar="ADDR",
+                   help="Fallback address for jobs with no location")
+    p.add_argument("--job", action="append", metavar="NUMBER", default=[],
+                   help="Specific job number to provision (can repeat); "
+                        "bypasses lookback and status filters")
+    p.add_argument("--dry-run", action="store_true",
+                   help="Log actions without calling any APIs")
+    p.add_argument("--verbose", "-v", action="store_true",
+                   help="DEBUG-level logging")
+    return p.parse_args(argv)
+
+
+def apply_args(args: argparse.Namespace) -> None:
+    """Push parsed CLI args into module-level config."""
+    global LOOKBACK_DAYS, STATUS_FILTER, JOB_PREFIX, MAX_JOBS, DEFAULT_LOCATION
+    global DRY_RUN, EXPLICIT_JOBS
+
+    if args.lookback is not None:         LOOKBACK_DAYS    = args.lookback
+    if args.status is not None:           STATUS_FILTER    = args.status
+    if args.prefix is not None:           JOB_PREFIX       = args.prefix
+    if args.max_jobs is not None:         MAX_JOBS         = args.max_jobs
+    if args.default_location is not None: DEFAULT_LOCATION = args.default_location.strip()
+    if args.dry_run:                      DRY_RUN          = True
+    if args.job:                          EXPLICIT_JOBS    = [j.strip() for j in args.job if j.strip()]
+
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    apply_args(args)
+
+    if EXPLICIT_JOBS:
+        log.info(
+            "provisioner starting in EXPLICIT mode: jobs=%s (dry_run=%s)",
+            ", ".join(EXPLICIT_JOBS), DRY_RUN,
+        )
+    else:
+        log.info(
+            "provisioner starting (lookback=%dd, status=%s, prefix=%s, dry_run=%s, max=%d)",
+            LOOKBACK_DAYS, STATUS_FILTER or "*", JOB_PREFIX or "*", DRY_RUN, MAX_JOBS,
+        )
+
+    try:
+        jobs = candidate_jobs()
+    except Exception as exc:
+        log.exception("failed to query Latitude: %s", exc)
+        return 2
+
+    if not jobs:
+        log.info("no candidate jobs — nothing to do")
+        return 0
+
+    log.info("found %d candidate job(s): %s",
+             len(jobs), ", ".join(j["job_number"] for j in jobs))
+
+    failures = 0
+    for job in jobs:
+        try:
+            provision_one(job)
+        except Exception as exc:
+            failures += 1
+            log.exception("FAILED to provision %s: %s", job["job_number"], exc)
+
+    log.info("done: %d ok, %d failed", len(jobs) - failures, failures)
+    return 1 if failures else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

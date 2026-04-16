@@ -1,21 +1,39 @@
-name: Build and Push to ACR
+name: Build, Push, and Deploy to Container App
 
 on:
   push:
     branches: [ main ]
+  workflow_dispatch: {}
+
+env:
+  REGISTRY: vgaregistry.azurecr.io
+  IMAGE:    vg-setup
+  RG:       VGA_group
+  APP:      vg-setup
+
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   ACR_USERNAME      — admin username for vgaregistry
+#   ACR_PASSWORD      — admin password for vgaregistry
+#   AZURE_CREDENTIALS — JSON from `az ad sp create-for-rbac --sdk-auth` with
+#                       Contributor (or narrower) rights on the VGA_group RG,
+#                       used to run `az containerapp update`.
 
 jobs:
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Compute image tag
+        id: tag
+        run: echo "version=$(date -u +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
+
       - name: Log in to Azure Container Registry
         uses: docker/login-action@v3
         with:
-          registry: vgaregistry.azurecr.io
+          registry: ${{ env.REGISTRY }}
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
@@ -24,4 +42,24 @@ jobs:
         with:
           context: .
           push: true
-          tags: vgaregistry.azurecr.io/vg-setup:latest
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ steps.tag.outputs.version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Update Container App to new image
+        run: |
+          az containerapp update \
+            --name "${{ env.APP }}" \
+            --resource-group "${{ env.RG }}" \
+            --image "${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ steps.tag.outputs.version }}"
+
+      - name: Summary
+        run: |
+          echo "Pushed image: ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ steps.tag.outputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Also tagged:  ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest"                          >> "$GITHUB_STEP_SUMMARY"
+          echo "Updated Container App: ${{ env.APP }} in ${{ env.RG }}"                            >> "$GITHUB_STEP_SUMMARY"
