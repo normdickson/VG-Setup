@@ -16,8 +16,6 @@ Designed to be run in three ways:
 Environment variables (all optional; CLI flags override):
     POLL_LOOKBACK_DAYS      Only process jobs with job_date within the last N
                             days (default: 7).
-    POLL_STATUS_FILTER      Only process jobs with this Work Status (default:
-                            "Active"). Set to "" to disable.
     POLL_JOB_PREFIX         Optional job-number prefix filter (e.g. "MSL").
     POLL_DRY_RUN            "1" to log what WOULD happen without making API
                             calls. Defaults to "0".
@@ -35,8 +33,8 @@ CLI usage:
     # Force-provision specific jobs (ignores filters & lookback window)
     python provisioner.py --job MSL050439 --job MSL050440
 
-    # Disable status filter, set a default location for missing ones
-    python provisioner.py --status "" --default-location "Calgary, AB"
+    # Set a default location for jobs that don't have one
+    python provisioner.py --default-location "Calgary, AB"
 
 Exit codes:
     0  — success (including "nothing to do")
@@ -72,7 +70,6 @@ log = logging.getLogger("provisioner")
 # ---------------------------------------------------------------------------
 
 LOOKBACK_DAYS    = int(os.environ.get("POLL_LOOKBACK_DAYS", "7"))
-STATUS_FILTER    = os.environ.get("POLL_STATUS_FILTER", "Active")
 JOB_PREFIX       = os.environ.get("POLL_JOB_PREFIX", "")
 DRY_RUN          = os.environ.get("POLL_DRY_RUN", "0") == "1"
 MAX_JOBS         = int(os.environ.get("POLL_MAX_JOBS", "25"))
@@ -102,10 +99,10 @@ def candidate_jobs() -> list[dict]:
             out.append(row)
         return out
 
-    # Normal polling mode: query + filter.
+    # Normal polling mode: find unprovisioned jobs inside the lookback window.
     rows = db.search_jobs(
         job_number_filter=JOB_PREFIX or None,
-        status_filter=STATUS_FILTER or None,
+        status_filter=None,
         client_filter=None,
         limit=500,
     )
@@ -183,13 +180,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "  provisioner.py --dry-run\n"
             "  provisioner.py --prefix MSL --lookback 30 --max 10\n"
             "  provisioner.py --job MSL050439 --job MSL050440\n"
-            "  provisioner.py --status '' --default-location 'Calgary, AB'\n"
+            "  provisioner.py --default-location 'Calgary, AB'\n"
         ),
     )
     p.add_argument("--lookback", type=int, metavar="DAYS",
                    help=f"Only process jobs within last N days (default: {LOOKBACK_DAYS})")
-    p.add_argument("--status", metavar="TEXT",
-                   help=f"Work Status filter, '' to disable (default: '{STATUS_FILTER}')")
     p.add_argument("--prefix", metavar="TEXT",
                    help=f"Job-number prefix filter (default: '{JOB_PREFIX}')")
     p.add_argument("--max", type=int, metavar="N", dest="max_jobs",
@@ -208,11 +203,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def apply_args(args: argparse.Namespace) -> None:
     """Push parsed CLI args into module-level config."""
-    global LOOKBACK_DAYS, STATUS_FILTER, JOB_PREFIX, MAX_JOBS, DEFAULT_LOCATION
+    global LOOKBACK_DAYS, JOB_PREFIX, MAX_JOBS, DEFAULT_LOCATION
     global DRY_RUN, EXPLICIT_JOBS
 
     if args.lookback is not None:         LOOKBACK_DAYS    = args.lookback
-    if args.status is not None:           STATUS_FILTER    = args.status
     if args.prefix is not None:           JOB_PREFIX       = args.prefix
     if args.max_jobs is not None:         MAX_JOBS         = args.max_jobs
     if args.default_location is not None: DEFAULT_LOCATION = args.default_location.strip()
@@ -234,8 +228,8 @@ def main(argv: list[str] | None = None) -> int:
         )
     else:
         log.info(
-            "provisioner starting (lookback=%dd, status=%s, prefix=%s, dry_run=%s, max=%d)",
-            LOOKBACK_DAYS, STATUS_FILTER or "*", JOB_PREFIX or "*", DRY_RUN, MAX_JOBS,
+            "provisioner starting (lookback=%dd, prefix=%s, dry_run=%s, max=%d)",
+            LOOKBACK_DAYS, JOB_PREFIX or "*", DRY_RUN, MAX_JOBS,
         )
 
     try:
