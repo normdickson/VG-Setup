@@ -70,11 +70,11 @@ class LatitudeDB:
         except Exception as exc:
             raise RuntimeError(f"Latitude API unexpected error: {exc}") from exc
 
-    def _post(self, path: str, body: dict) -> dict:
-        """Make a POST request to the Azure Function API."""
+    def _request(self, method: str, path: str, body: dict = None) -> dict:
+        """Make an HTTP request to the Azure Function API."""
         url = f"{self._api_url}{path}"
         try:
-            resp = self._session.post(url, json=body, timeout=30)
+            resp = self._session.request(method, url, json=body, timeout=30)
             resp.raise_for_status()
             return resp.json() if resp.content else {}
         except requests.exceptions.ConnectionError as exc:
@@ -88,22 +88,24 @@ class LatitudeDB:
 
     def mark_provisioned(self, job_number: str) -> bool:
         """
-        Stamp dteJobUserField25 = GETDATE() for the given job number.
+        Stamp dteJobUserField25 = now for the given job number via
+        PATCH /api/markProvisioned.
 
         Returns:
             True  if the row was updated.
-            False if the markProvisioned endpoint isn't deployed yet (non-fatal).
+            False if the markProvisioned endpoint isn't deployed (non-fatal).
 
         Raises:
             RuntimeError on any other error (including 404 job-not-found).
         """
         try:
-            self._post("/api/markProvisioned", body={"job_number": job_number})
+            self._request("PATCH", "/api/markProvisioned", body={"job_number": job_number})
             return True
         except RuntimeError as exc:
-            # Endpoint may not be deployed yet — warn but don't explode.
+            # Endpoint may not be deployed yet, or job number not found.
+            # Either way, provisioning artifacts were already created — don't raise.
             if "404" in str(exc):
-                log.warning("mark_provisioned: endpoint returned 404 (not yet deployed?): %s", exc)
+                log.warning("mark_provisioned: endpoint returned 404: %s", exc)
                 return False
             raise
 
