@@ -114,17 +114,32 @@ class LatitudeDB:
         """
         Fetch a single job by exact job number.
 
+        Tries the server-side job_number filter first, and falls back to
+        fetching the recent list and filtering client-side if the filter
+        endpoint errors out (observed 500 on some inputs).
+
         Returns:
             Job dict or None if not found.
         """
         if not job_number or not job_number.strip():
             raise RuntimeError("job_number must be a non-empty string")
 
-        data = self._get("/api/getJobs", params={"job_number": job_number.strip()})
+        needle = job_number.strip()
+
+        # Attempt 1: server-side filter (fast path).
+        try:
+            data = self._get("/api/getJobs", params={"job_number": needle})
+        except RuntimeError as exc:
+            log.warning(
+                "get_job: server-side job_number filter failed (%s); "
+                "falling back to client-side scan",
+                exc,
+            )
+            data = self._get("/api/getJobs", params={"limit": 500})
 
         for row in data:
             normalised = _normalise_job(row)
-            if normalised["job_number"] == job_number.strip():
+            if normalised["job_number"] == needle:
                 return normalised
 
         log.warning("get_job: job %s not found", job_number)
