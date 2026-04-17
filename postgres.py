@@ -107,6 +107,7 @@ SELECT json_build_object(
              f.label AS form_label,
              ft.name AS form_type,
              l.name  AS location_name,
+             f.creating_company_id,
              f.created_on,
              f.last_modified_on,
              f.due
