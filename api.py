@@ -213,6 +213,38 @@ def search_details(jobNumber: str):
     return details
 
 
+@app.get("/search/counts")
+def search_counts(jobNumbers: str):
+    """
+    Return form counts for a batch of 6-char Latitude job numbers. Used by
+    the frontend to hide expand chevrons on rows with zero form records.
+
+    Query parameters:
+        jobNumbers  Comma-separated list of 6-char job numbers
+                    (e.g. "260179,260175,260167"). Invalid entries are
+                    silently skipped. Limit 500.
+
+    Response:
+        { "260179": 5, "260167": 2, ... }
+        Jobs with zero forms are omitted — treat missing keys as 0.
+    """
+    raw = (jobNumbers or "").split(",")
+    jns = [s.strip() for s in raw if s.strip() and len(s.strip()) == 6]
+    if not jns:
+        return {}
+    if len(jns) > 500:
+        jns = jns[:500]
+
+    try:
+        return postgres.get_form_counts(jns)
+    except RuntimeError as exc:
+        log.exception("search_counts: DB error")
+        raise HTTPException(status_code=503, detail=str(exc))
+    except Exception as exc:
+        log.exception("search_counts: unexpected error")
+        raise HTTPException(status_code=500, detail=f"Internal error: {exc}")
+
+
 @app.get("/statuses", response_model=WorkStatusesResponse)
 def get_work_statuses():
     """

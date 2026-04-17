@@ -141,3 +141,41 @@ def get_job_details(job_number: str) -> dict:
 
     # row["details"] is a dict (psycopg decodes json_build_object output)
     return row["details"] if row else {"time_tickets": [], "forms": []}
+
+
+# ---------------------------------------------------------------------------
+# Batch form counts — used by GET /search/counts to let the frontend hide
+# expand chevrons on rows with zero form records.
+# ---------------------------------------------------------------------------
+
+_COUNTS_SQL = """
+SELECT LEFT(l.name, 6) AS job_number,
+       COUNT(*)::int   AS n
+FROM   locations l
+JOIN   forms     f ON f.location_id = l.id
+WHERE  LEFT(l.name, 6) = ANY(%(jobs)s)
+  AND  NOT f.is_deleted
+  AND  NOT l.is_archived
+GROUP  BY 1
+"""
+
+
+def get_form_counts(job_numbers: list[str]) -> dict[str, int]:
+    """
+    Return a mapping of job_number -> form count for the given list of
+    6-char Latitude job numbers. Jobs with zero forms are omitted from
+    the response (caller should treat missing keys as 0).
+    """
+    if not job_numbers:
+        return {}
+
+    pool = get_pool()
+    try:
+        with pool.connection() as conn, conn.cursor() as cur:
+            cur.execute(_COUNTS_SQL, {"jobs": list(job_numbers)})
+            rows = cur.fetchall()
+    except Exception as exc:
+        log.exception("get_form_counts failed for %d jobs", len(job_numbers))
+        raise RuntimeError(f"Postgres counts query failed: {exc}") from exc
+
+    return {r["job_number"]: r["n"] for r in rows}
