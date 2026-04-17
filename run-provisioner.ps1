@@ -1,13 +1,19 @@
 # run-provisioner.ps1 — Wrapper for Windows Task Scheduler.
 #
-# Pulls env vars + secrets from the vg-setup Container App on every run
-# (so we don't have to keep them in sync here), then runs provisioner.py
-# against whatever Latitude jobs are currently unprovisioned.
+# Loads env vars from .env.provisioner (one-time dump from Azure),
+# then runs provisioner.py against whatever Latitude jobs are
+# currently unprovisioned.
+#
+# First-time setup — generate .env.provisioner from Azure:
+#   az containerapp show --name vg-setup --resource-group VGA_group `
+#     --query "properties.template.containers[0].env[].[name,value]" -o tsv |
+#     ForEach-Object { $_ -replace "`t","=" } |
+#     Out-File -FilePath .env.provisioner -Encoding utf8
 #
 # Usage (manual test):
-#   powershell -ExecutionPolicy Bypass -File .\run-provisioner.ps1
+#   pwsh -ExecutionPolicy Bypass -File .\run-provisioner.ps1
 #
-# Scheduled task registration: see README (or the inline snippet below).
+# Scheduled task registration: see the comment block at the bottom.
 
 # Do NOT use $ErrorActionPreference = "Stop" here.
 # Python's logging module writes INFO/DEBUG lines to stderr; under
@@ -46,26 +52,26 @@ function Write-Log {
 
 Write-Log "=== provisioner run starting ==="
 
-# --- Pull env vars + secrets from the Container App --------------------
-Write-Log "fetching env vars from Container App vg-setup/VGA_group"
-$envsJson = az containerapp show --name vg-setup --resource-group VGA_group `
-              --query "properties.template.containers[0].env" -o json
-if ($LASTEXITCODE -ne 0 -or -not $envsJson) {
-    Write-Log "FATAL  could not fetch env vars from Container App (az exit=$LASTEXITCODE)"
+# --- Load env vars from .env.provisioner file --------------------------
+$envFile = Join-Path $repo ".env.provisioner"
+if (-not (Test-Path $envFile)) {
+    Write-Log "FATAL  .env.provisioner not found. Generate it with:"
+    Write-Log "  az containerapp show --name vg-setup --resource-group VGA_group ``"
+    Write-Log "    --query `"properties.template.containers[0].env[].[name,value]`" -o tsv |"
+    Write-Log "    ForEach-Object { `$_ -replace '``t','=' } |"
+    Write-Log "    Out-File -FilePath .env.provisioner -Encoding utf8"
     exit 2
 }
 
-$envs = $envsJson | ConvertFrom-Json
-foreach ($e in $envs) {
-    if ($e.value) {
-        Set-Item -Path "Env:$($e.name)" -Value $e.value
-    } elseif ($e.secretRef) {
-        $secret = az containerapp secret show --name vg-setup --resource-group VGA_group `
-                    --secret-name $e.secretRef --query value -o tsv
-        if ($LASTEXITCODE -eq 0 -and $secret) {
-            Set-Item -Path "Env:$($e.name)" -Value $secret
-        } else {
-            Write-Log "WARN  could not read secret $($e.secretRef)"
+Write-Log "loading env vars from $envFile"
+Get-Content $envFile -Encoding utf8 | ForEach-Object {
+    $line = $_.Trim()
+    if ($line -and -not $line.StartsWith("#") -and $line.Contains("=")) {
+        $idx   = $line.IndexOf("=")
+        $name  = $line.Substring(0, $idx).Trim()
+        $value = $line.Substring($idx + 1).Trim()
+        if ($name -and $value) {
+            Set-Item -Path "Env:$name" -Value $value
         }
     }
 }
