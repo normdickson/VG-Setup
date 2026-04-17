@@ -343,6 +343,7 @@ def create_job_batch(req: BatchCreationRequest):
                     location        = location_name,
                     job_date_iso    = job_date_iso,
                     company_name    = company_name,
+                    job_type        = job.get("job_type"),
                 )
                 result.sitedocs_id  = sitedocs_id
                 result.sitedocs_url = f"https://app.sitedocs.com/locations/{sitedocs_id}"

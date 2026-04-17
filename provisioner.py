@@ -188,6 +188,7 @@ def provision_one(job: dict) -> dict:
         location        = location,
         job_date_iso    = job_date,
         company_name    = company_name,
+        job_type        = job.get("job_type"),
     )
     summary["sitedocs_id"]  = sitedocs_id
     summary["sitedocs_url"] = f"https://app.sitedocs.com/locations/{sitedocs_id}" if sitedocs_id else None

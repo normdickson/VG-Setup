@@ -3,8 +3,8 @@ sited.py — SiteDocs API calls for location creation.
 
 SiteDocs Name convention matches the observed pattern in create_location.py:
     Name = "{job_number} ({company_name})"
-    Description = "{company_name}"
-    Address = "{location}"
+    Description = "{job_type}" (Latitude JobType field)
+    Address = "{location}" (Latitude Job Description field)
 
 API key MUST be supplied via SITEDOCS_API_KEY env var.
 There is no hardcoded fallback to prevent accidental key exposure.
@@ -64,6 +64,7 @@ def create_location(
     location:       Optional[str],
     job_date_iso:   Optional[str],
     company_name:   Optional[str] = None,
+    job_type:       Optional[str] = None,
 ) -> str:
     """
     Create a Location record in SiteDocs.
@@ -95,8 +96,8 @@ def create_location(
     else:
         name = job_number
 
-    # Build the Description field
-    description = _trunc(company_name or job_description, _DESCRIPTION_MAX)
+    # Build the Description field — use Job Type from Latitude
+    description = _trunc(job_type or job_description, _DESCRIPTION_MAX)
 
     payload = {
         "Name":              _trunc(name, _NAME_MAX),
