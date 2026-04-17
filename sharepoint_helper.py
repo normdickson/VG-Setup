@@ -370,14 +370,27 @@ def copy_template_folder(job_number: str, year: int) -> str:
                 "If this is a re-submission, check SiteDocs before proceeding."
             )
 
-        # 4. Server-side copy: template → year folder, renamed to job_number
-        _server_side_copy(
-            src_item_id    = template_id,
-            dest_parent_id = year_folder_id,
-            dest_name      = job_number,
-        )
+        # 4. Create the empty job folder first
+        job_folder = _create_folder_in_parent(year_path, job_number)
+        job_folder_id = job_folder["id"]
+        log.info("Job folder created: %s (id=%s)", job_path, job_folder_id)
 
-        # 5. Retrieve the web URL of the newly created folder
+        # 5. Copy each child of the template INTO the job folder.
+        #    This copies the CONTENTS of Seed Folders, not the folder itself.
+        template_children = _list_folder_items_all(TEMPLATE_PATH)
+        if not template_children:
+            log.warning("Template folder '%s' is empty — no items to copy", TEMPLATE_PATH)
+
+        for child in template_children:
+            child_name = child.get("name", "unknown")
+            log.info("  copying template item: %s", child_name)
+            _server_side_copy(
+                src_item_id    = child["id"],
+                dest_parent_id = job_folder_id,
+                dest_name      = child_name,
+            )
+
+        # 6. Retrieve the web URL of the newly created folder
         job_item = _get_item(job_path)
         if job_item is None:
             raise RuntimeError(
